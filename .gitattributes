@@ -1,0 +1,4 @@
+*.pdf binary
+*.npy binary
+*.py text eol=lf
+*.csv text eol=lf

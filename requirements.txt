@@ -5,3 +5,5 @@ catboost==1.2.10
 shap
 scipy
 pytest
+pdfplumber
+pikepdf
