@@ -17,16 +17,21 @@ They are not committed to the repo.
 
 ## Run
 ```bash
-PYTHONPATH=src pytest -q tests                 # 4 tests
+PYTHONPATH=src pytest -q tests                 # golden test runs only if data/raw/ exists
 PYTHONPATH=src python scripts/run_research.py  # all results -> results/
 ```
 
 ## Layout
-- `src/flowscore/window.py`: 3-month pre-loan observation window
-- `src/flowscore/features/`: application and transaction features
+- `src/flowscore/schema.py`: the canonical transaction schema every feature works on
+- `src/flowscore/features/cashflow.py`: **the feature library**: research features, obligation
+  features (debt service, rent, reimbursements, fees) and the 12-month salary baseline
+- `src/flowscore/adapters/berka.py`: Berka codes -> canonical schema
+- `src/flowscore/features/application.py`, `transactions.py`: Berka entry points for the research
 - `src/flowscore/experiment.py`: feature sets, models, CV, bootstrap
-- `scripts/run_research.py`: RQ1–RQ5 end to end
-- `results/`: output CSVs and run log
+- `scripts/run_research.py`, `scripts/run_tabpfn.py`: RQ1–RQ5 end to end
+- `tools/`: local-only BPI statement parser, verifier and personal feature runner
+- `results/`: output CSVs and run log; `results/features.csv` is the golden file for
+  `tests/test_berka_golden.py`
 
 ## Privacy
 Never commit personal bank statements. Keep them in `personal/` (git-ignored) and use them locally only.
