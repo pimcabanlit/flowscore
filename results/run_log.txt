@@ -1,0 +1,66 @@
+== RQ1/RQ2: AUROC by model and feature set
+               model               config  AUROC    lo    hi  PR_AUC  Brier
+Logistic regression  A: application only  0.654 0.599 0.711   0.170  0.098
+Logistic regression B: transactions only  0.810 0.756 0.875   0.513  0.075
+Logistic regression          C: combined  0.813 0.763 0.872   0.535  0.073
+      Random forest  A: application only  0.632 0.569 0.704   0.183  0.098
+      Random forest B: transactions only  0.843 0.793 0.898   0.580  0.069
+      Random forest          C: combined  0.844 0.792 0.896   0.608  0.068
+           CatBoost  A: application only  0.604 0.545 0.671   0.164  0.107
+           CatBoost B: transactions only  0.831 0.782 0.891   0.549  0.075
+           CatBoost          C: combined  0.844 0.804 0.901   0.591  0.069
+
+== Paired differences (AUROC, 95% CI)
+Logistic regression  B−A +0.159 [+0.085, +0.235]   C−B +0.003 [-0.025, +0.031]
+Random forest        B−A +0.208 [+0.130, +0.288]   C−B -0.000 [-0.028, +0.028]
+CatBoost             B−A +0.230 [+0.155, +0.306]   C−B +0.015 [-0.012, +0.043]
+Random forest − LR (combined): +0.028 [-0.006, +0.065]
+CatBoost − LR (combined): +0.035 [+0.008, +0.067]
+
+== Sensitivity: + is_joint_account
+LR A: application only: 0.751  (main: 0.654)
+LR C: combined: 0.860  (main: 0.813)
+
+== RQ5 calibration (combined; actual default rate 0.111)
+               model version  mean_PD  Brier  log_loss  slope   ECE
+Logistic regression     raw    0.111  0.074     0.272  0.715 0.026
+Logistic regression   Platt    0.112  0.074     0.263  1.087 0.025
+           CatBoost     raw    0.093  0.066     0.241  0.770 0.019
+           CatBoost   Platt    0.111  0.067     0.245  1.307 0.034
+('Logistic regression', 'raw') quintiles pred→obs: 0.004→0.029 | 0.019→0.044 | 0.044→0.059 | 0.103→0.044 | 0.384→0.380
+('Logistic regression', 'Platt') quintiles pred→obs: 0.014→0.022 | 0.039→0.044 | 0.067→0.066 | 0.116→0.051 | 0.324→0.372
+('CatBoost', 'raw') quintiles pred→obs: 0.004→0.015 | 0.009→0.015 | 0.018→0.037 | 0.043→0.103 | 0.387→0.387
+('CatBoost', 'Platt') quintiles pred→obs: 0.053→0.036 | 0.056→0.037 | 0.060→0.029 | 0.069→0.051 | 0.315→0.401
+
+== RQ3 SHAP importance (mean |SHAP|, log-odds)
+                                     LR  CatBoost       source  LR_rank  CB_rank
+min_balance                      0.909     0.868  transaction        1        1
+account_age_days                 0.407     0.385  application        3        2
+inflow_cv                        0.325     0.320  transaction        5        3
+district_avg_salary              0.063     0.245  application       17        4
+monthly_payment                  0.178     0.235  application        9        5
+avg_daily_balance                0.054     0.201  transaction       18        6
+loan_amount                      0.520     0.163  application        2        7
+tx_count                         0.084     0.145  transaction       15        8
+avg_monthly_inflow               0.158     0.110  transaction       10        9
+district_urban_ratio             0.104     0.076  application       12       10
+penalty_interest_count           0.092     0.072  transaction       14       11
+district_entrepreneurs_per_1000  0.198     0.067  application        8       12
+outflow_inflow_ratio             0.006     0.062  transaction       19       13
+district_unemployment_96         0.228     0.054  application        7       14
+days_negative_balance            0.068     0.040  transaction       16       15
+district_population              0.096     0.036  application       13       16
+loan_duration_months             0.337     0.022  application        4       17
+months_net_outflow               0.003     0.021  transaction       20       18
+statement_frequency              0.134     0.018  application       11       19
+has_card_before_loan             0.315     0.010  application        6       20
+Spearman rank agreement LR vs CatBoost: 0.27
+LR: share of |SHAP| from transaction features = 40%
+CatBoost: share of |SHAP| from transaction features = 58%
+
+Example: loan 5447 (defaulted), top LR contributions:
+  days_negative_balance        +11.07  value=75
+  penalty_interest_count       +7.11  value=6
+  min_balance                  +3.75  value=-17030.4
+  loan_amount                  +1.13  value=541200
+  account_age_days             -0.57  value=587
