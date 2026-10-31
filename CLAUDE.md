@@ -48,7 +48,7 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 26 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 33 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
@@ -116,8 +116,8 @@ models), not by technical type; this overrides section 9.3 of the spec.
 1. **Scoring API.** Train the app model once (CatBoost, transaction features) and save it as a
    versioned artifact with its feature list, training data version and metrics. FastAPI
    endpoint: canonical transactions in -> features + PD + SHAP contributions out. No DB yet.
-   **Open decision first:** the model is trained on Czech Berka data but will score Philippine
-   borrowers. Decide with the owner how the app states and limits this before building.
+   The Berka -> Philippines gap is settled by D21: scale-free features (`SCALE_FREE_FEATURES`),
+   a relative risk band instead of a PD, per-feature out-of-range flags.
 2. **Synthetic Philippine borrowers** for the demo, calibrated on statement *patterns*
    (semi-monthly payroll, InstaPay fees, card payments), never the owner's amounts.
 3. **Database:** borrowers, transactions, feature snapshots, assessments, model registry.

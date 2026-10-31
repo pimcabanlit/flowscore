@@ -5,8 +5,9 @@ Three groups, all computed only from transactions in [as_of - months, as_of):
 1. window_features      the 9 research features used in the Berka study
 2. obligation_features  debt, rent, reimbursement and fee features (Philippine statements)
 3. salary_baseline      a steadier income level: median monthly salary over prior full months
+4. scale_free_features  amounts divided by income_denominator, for scoring outside Berka (D21)
 
-`features_as_of` runs all three for one account at one date.
+`features_as_of` runs groups 1-3 for one account at one date.
 """
 import numpy as np
 import pandas as pd
@@ -17,6 +18,10 @@ from flowscore.schema import (BALANCE, CATEGORY, CREDIT, DATE, DEBIT, DEBT, EXCL
 WINDOW_FEATURES = ["avg_monthly_inflow", "inflow_cv", "avg_daily_balance", "min_balance",
                    "days_negative_balance", "penalty_interest_count", "months_net_outflow",
                    "outflow_inflow_ratio", "tx_count"]
+
+# App feature set (D21): no absolute amounts, no Czech overdraft mechanics, no habit-driven counts.
+SCALE_FREE_FEATURES = ["inflow_cv", "outflow_inflow_ratio", "months_net_outflow",
+                       "min_balance_to_income", "avg_balance_to_income"]
 
 
 # ---------------------------------------------------------------------------------------------
@@ -147,6 +152,43 @@ def salary_baseline(monthly: pd.Series, window: pd.DataFrame, as_of, months: int
         "salary_baseline_months_used": len(past),
         "debt_service_ratio_baseline": debt_m / base if ok else np.nan,
         "net_debt_service_ratio_baseline": max(debt_m - reimb_m, 0.0) / base if ok else np.nan,
+    }
+
+
+# ---------------------------------------------------------------------------------------------
+# 4. scale-free features (D21)
+
+def monthly_inflows(window: pd.DataFrame, as_of, months: int = 3) -> np.ndarray:
+    """Inflow per month bucket counted back from as_of (bucket 0 = the month just before it),
+    excluding EXCLUDED_FROM_INFLOW (bank interest). Same buckets as window_features."""
+    as_of = pd.Timestamp(as_of)
+    if not len(window):
+        return np.zeros(months)
+    credit, _ = _amounts(window)
+    inflow = credit.where(~window[CATEGORY].isin(EXCLUDED_FROM_INFLOW), 0.0)
+    edges = [as_of - pd.DateOffset(months=k) for k in range(months + 1)]
+    return np.array([inflow[(window[DATE] >= edges[k + 1]) & (window[DATE] < edges[k])].sum()
+                     for k in range(months)], dtype=float)
+
+
+def income_denominator(window: pd.DataFrame, as_of, months: int = 3) -> float:
+    """THE income level used to make amounts scale-free, identical for every data source:
+    median monthly inflow (excluding interest) over the window's month buckets.
+    Not salary: Berka has no salary category. NaN when the median is not positive."""
+    med = float(np.median(monthly_inflows(window, as_of, months)))
+    return med if med > 0 else np.nan
+
+
+def scale_free_features(window_feats: dict, income: float) -> dict:
+    """SCALE_FREE_FEATURES from the research features of the same window and its income."""
+    ok = income == income and income > 0
+    per_income = lambda v: v / income if ok else np.nan
+    return {
+        "inflow_cv": window_feats["inflow_cv"],
+        "outflow_inflow_ratio": window_feats["outflow_inflow_ratio"],
+        "months_net_outflow": window_feats["months_net_outflow"],
+        "min_balance_to_income": per_income(window_feats["min_balance"]),
+        "avg_balance_to_income": per_income(window_feats["avg_daily_balance"]),
     }
 
 

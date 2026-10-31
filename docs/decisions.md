@@ -94,9 +94,33 @@ index that hides pages from pdfplumber.
 **D20. Backend organised by domain, not by technical type.** Follows the owner's stack
 conventions; overrides spec section 9.3.
 
-## Open
+## App
 
-**O1. How the app handles the Berka -> Philippines gap.** The model learned from Czech 1990s
-borrowers in koruna. Absolute amounts (balances, income) do not transfer; scale-free features
-(ratios, counts, volatility) transfer better but are still unvalidated on Philippine outcomes.
-Decide before slice 1.
+**D21. The app scores on a scale-free feature set and reports a relative risk band, not a PD.**
+Closes O1 (how the app handles the Berka -> Philippines gap). The model learned from Czech 1990s
+borrowers in koruna, so absolute amounts (balances, income) mean nothing for a PHP account, and
+converting currencies across 30 years and two economies has no empirical basis.
+- *Income denominator:* `income_denominator` in `features/cashflow.py`, the median monthly inflow
+  excluding interest over the window's month buckets. One definition for every data source; not
+  salary, because Berka has no salary category. NaN when the median is not positive.
+- *Feature set* (`SCALE_FREE_FEATURES`): `inflow_cv`, `outflow_inflow_ratio`, `months_net_outflow`,
+  `min_balance_to_income`, `avg_balance_to_income`. Dropped: `avg_monthly_inflow`, `min_balance`,
+  `avg_daily_balance` (absolute amounts), `days_negative_balance` and `penalty_interest_count`
+  (Czech overdraft mechanics; Philippine savings accounts rarely go negative), `tx_count`
+  (driven by banking habits, e.g. many small InstaPay transfers).
+- *Output:* the borrower's percentile among the Berka reference borrowers, with a permanent
+  "not validated on Philippine outcomes" notice. No calibrated PD is claimed.
+- *Out-of-range inputs:* the reference range of each feature is its min-max in the training data
+  (outside it, trees extrapolate flat and the model has never seen the case). Each feature outside
+  it is flagged in the response; scoring is refused only if more than half the features are out of
+  range. Missing values are reported as missing, not as out of range.
+- *Measured cost* (`scripts/run_scale_free.py`, same folds and bootstrap resamples as
+  `run_research.py`, paired; `results/d21_scale_free.csv`): CatBoost 0.831 -> 0.791 AUROC,
+  paired difference -0.034 [95% CI -0.077, +0.008]; LR 0.810 -> 0.770, -0.038 [-0.101, +0.028].
+  Both CIs include zero: a real but modest cost, and the scale-free set keeps most of the
+  transaction signal (application-only CatBoost is 0.604). The 0.831 reproduces results/rq1_rq2.csv.
+  Income is NaN for 28 loans (median month had no inflow); 10 of them defaulted (36% vs 11%
+  overall). The imputer fills them with the median, so this signal is currently unused.
+Research results are unchanged: the research feature path and `results/` are untouched.
+*Reopen if:* labelled Philippine outcomes become available (then validate or retrain), or the
+measured cost is large enough that a different transfer approach is worth trying.
