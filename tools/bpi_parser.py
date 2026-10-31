@@ -46,9 +46,38 @@ RULES = [
 ]
 
 
-def categorize(description: str, details: str, is_credit: bool) -> str:
+def load_personal_rules(path) -> list:
+    """Private keyword rules from a CSV (keyword,side,category); checked BEFORE the built-in rules.
+
+    Lives in personal/ (git-ignored) so names of landlords, lenders or people never reach the repo.
+    side is 'debit', 'credit' or 'any'.
+    """
+    path = Path(path)
+    if not path.exists():
+        return []
+    # utf-8-sig: Windows Notepad adds an invisible BOM before the first header
+    r = pd.read_csv(path, dtype=str, encoding="utf-8-sig", skipinitialspace=True).fillna("")
+    r.columns = [c.strip().lower() for c in r.columns]
+    missing = {"keyword", "side", "category"} - set(r.columns)
+    if missing:
+        sys.exit(f"{path}: missing column(s) {sorted(missing)}; need keyword,side,category")
+    rules = []
+    for row in r.itertuples():
+        kw = re.sub(r"\s+", "", row.keyword).upper()
+        side = row.side.strip().lower() or "any"
+        if kw and row.category.strip():
+            if side not in ("debit", "credit", "any"):
+                sys.exit(f"{path}: side must be debit, credit or any (got '{row.side}')")
+            rules.append((row.category.strip(), side, [kw]))
+    return rules
+
+
+def categorize(description: str, details: str, is_credit: bool, personal_rules=()) -> str:
     text = re.sub(r"\s+", "", f"{description}{details}").upper()
     side = "credit" if is_credit else "debit"
+    for name, rule_side, keys in personal_rules:
+        if rule_side in (side, "any") and any(k in text for k in keys):
+            return name
     for name, rule_side, keys in RULES:
         if rule_side == side and any(k in text for k in keys):
             return name
@@ -267,6 +296,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("inputs", nargs="+", help="PDF files or folders of PDFs")
     ap.add_argument("-o", "--out", required=True, help="output CSV path")
+    ap.add_argument("--rules", default="personal/category_rules.csv",
+                    help="private keyword rules CSV (keyword,side,category), used if it exists")
     ap.add_argument("--debug", action="store_true",
                     help="print column geometry and masked rows (letters->a, digits->9); safe to share")
     args = ap.parse_args(argv)
@@ -300,10 +331,11 @@ def main(argv=None):
                                     "debit_amount", "credit_amount", "running_balance"])
     df = df.sort_values(["transaction_date", "source_file", "page"], kind="stable").reset_index(drop=True)
     df["transaction_id"] = [f"T{i:06d}" for i in range(1, len(df) + 1)]
-    df["transaction_category"] = [categorize(r.description, r.details, (r.credit_amount or 0) > 0)
+    personal = load_personal_rules(args.rules)
+    df["transaction_category"] = [categorize(r.description, r.details, (r.credit_amount or 0) > 0, personal)
                                   for r in df.itertuples()]
     cols = ["transaction_id", "transaction_date", "description", "ref", "details", "debit_amount",
-            "credit_amount", "running_balance", "transaction_category", "source_file"]
+            "credit_amount", "running_balance", "transaction_category", "source_file", "page"]
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     df[cols].to_csv(args.out, index=False)
 
@@ -317,6 +349,8 @@ def main(argv=None):
             if pno == 0:
                 print(f"      {status}"); continue
             print(f"      page {pno}: {status}" + (f", {n_dated} dated rows" if status.startswith("read") else ""))
+    print(f"\nPersonal rules: {len(personal)} loaded from {args.rules}" if personal
+          else f"\nPersonal rules: none ({args.rules} not found)")
     print("\nCategories:")
     print(df.transaction_category.value_counts().to_string())
     print(f"\nChecks: {len(all_issues)} issue(s)")

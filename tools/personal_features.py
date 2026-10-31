@@ -48,12 +48,49 @@ def ph_extras(w: pd.DataFrame, months: int) -> dict:
     salary = inflow[w["transaction_category"] == "salary"].sum()
     debt = outflow[w["transaction_category"].isin(DEBT)].sum()
     fees = outflow[w["transaction_category"] == "fee"].sum()
+    rent = outflow[w["transaction_category"] == "rent"].sum()
+    reimb = inflow[w["transaction_category"] == "reimbursement"].sum()
     return {
         "salary_share_of_inflow": salary / inflow.sum() if inflow.sum() else np.nan,
         "debt_service_ratio": debt / salary if salary else np.nan,        # card/loan payments / salary
+        "fixed_obligation_ratio": (debt + rent) / salary if salary else np.nan,  # debt + rent / salary
+        # same as debt_service_ratio, minus money others sent back for things on your card (tag senders
+        # as 'reimbursement' in personal/category_rules.csv). Conservative view = debt_service_ratio.
+        "net_debt_service_ratio": max(debt - reimb, 0.0) / salary if salary else np.nan,
+        "reimbursements_per_month": reimb / months,
         "fees_per_month": fees / months,
         "card_purchases_per_month": (w["transaction_category"] == "card_purchase").sum() / months,
         "salary_credits": int((w["transaction_category"] == "salary").sum()),
+    }
+
+
+def monthly_salary(tx: pd.DataFrame) -> pd.Series:
+    """Salary per calendar month, only for months fully covered by the statements (zero-pay months stay 0)."""
+    first, last = tx["transaction_date"].min(), tx["transaction_date"].max()
+    months = pd.period_range(first, last, freq="M")
+    covered = [m for m in months if m.start_time >= first.normalize() and m.end_time.normalize() <= last.normalize()]
+    sal = tx[tx["transaction_category"] == "salary"]
+    totals = sal.groupby(sal["transaction_date"].dt.to_period("M"))["credit_amount"].sum()
+    return pd.Series({m: float(totals.get(m, 0.0)) for m in covered})
+
+
+def baseline_features(monthly: pd.Series, as_of, w: pd.DataFrame, window_months: int,
+                      lookback=12, min_months=3) -> dict:
+    """Steadier income: median monthly salary over up to 12 full months BEFORE as_of.
+
+    A median ignores one bonus month or one short month, so ratios built on it don't jump
+    because of where the window happens to fall. Missing (NaN) until 3 full months exist.
+    """
+    past = monthly[[m for m in monthly.index if m.end_time < pd.Timestamp(as_of)]].tail(lookback)
+    base = float(past.median()) if len(past) >= min_months else np.nan
+    debt_m = w["debit_amount"].fillna(0)[w["transaction_category"].isin(DEBT)].sum() / window_months
+    reimb_m = w["credit_amount"].fillna(0)[w["transaction_category"] == "reimbursement"].sum() / window_months
+    ok = base == base and base > 0
+    return {
+        "salary_baseline_monthly": base,
+        "salary_baseline_months_used": len(past),
+        "debt_service_ratio_baseline": debt_m / base if ok else np.nan,
+        "net_debt_service_ratio_baseline": max(debt_m - reimb_m, 0.0) / base if ok else np.nan,
     }
 
 
@@ -74,12 +111,14 @@ def main():
         sys.exit(f"Need at least {args.months} months of history; have {first.date()} to {last.date()}.")
 
     berka = to_berka_shape(tx)
+    monthly = monthly_salary(tx)
     rows = []
     for d in asof:
         start = d - pd.DateOffset(months=args.months)
         mask = (tx["transaction_date"] >= start) & (tx["transaction_date"] < d)
         f = loan_features(berka[mask.values], d, opening_balance(tx, start), args.months)
-        rows.append({"as_of": d.date(), **f, **ph_extras(tx[mask], args.months)})
+        rows.append({"as_of": d.date(), **f, **ph_extras(tx[mask], args.months),
+                     **baseline_features(monthly, d, tx[mask], args.months)})
     out = pd.DataFrame(rows)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(args.out, index=False)

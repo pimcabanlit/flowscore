@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import pytest
-from bpi_parser import parse_pdf, build_transactions, categorize
+from bpi_parser import parse_pdf, build_transactions, categorize, load_personal_rules
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -37,3 +37,19 @@ def test_multipage_wide_letter_spacing():
     tx, opening, issues = build_transactions(rows, period, pdf.name)
     assert [p[1] for p in pages if p[0] > 0] == ["skipped (no table header)", "read", "read", "read"]
     assert len(tx) == 110 and opening == 15000.00 and issues == []
+
+
+def test_personal_rules_win_and_stay_private(tmp_path):
+    f = tmp_path / "rules.csv"
+    f.write_text("keyword,side,category\nLANDLORD NAME,debit,rent\nABC Lending,any,loan_payment\n")
+    rules = load_personal_rules(f)
+    assert categorize("InstaPay Transfer", "TO: LANDLORD NAME", False, rules) == "rent"   # beats transfer_out
+    assert categorize("Fund Transfer", "TO:ABCLENDING", False, rules) == "loan_payment"   # spaces/case ignored
+    assert categorize("InstaPay Transfer", "TO: SOMEONE", False, rules) == "transfer_out"  # built-ins still apply
+    assert load_personal_rules(tmp_path / "missing.csv") == []
+
+
+def test_personal_rules_saved_by_windows_notepad(tmp_path):
+    f = tmp_path / "rules.csv"
+    f.write_bytes("\ufeffkeyword, side, category\r\nLANDLORD NAME, debit, rent\r\n".encode("utf-8"))
+    assert categorize("InstaPay Transfer", "TO: LANDLORD NAME", False, load_personal_rules(f)) == "rent"
