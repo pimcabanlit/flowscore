@@ -55,6 +55,32 @@ python tools\verify_transactions.py personal\transactions.csv
 python tools\personal_features.py personal\transactions.csv
 ```
 
+26 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
+Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
+
+## How changes land
+
+Human attention is the scarce resource: checks do most of the reading, the owner reads by risk,
+and every change must be cheap to undo.
+
+1. **Branch.** Work on a branch. Never push to `main`.
+2. **Verify before opening a PR**, and paste the real command output into the PR description:
+   - `$env:PYTHONPATH="src"; pytest -q tests`: everything passes.
+   - **Research-frozen paths** (`src/flowscore/features/`, `adapters/`, `schema.py`, `window.py`,
+     `experiment.py`, `results/`): paste output **from the owner's machine** (or anywhere the
+     Berka data is present) showing every test passed and none skipped, then
+     `python scripts\run_research.py` followed by `git diff --exit-code results/` exiting 0.
+     Without that evidence the PR is not ready.
+   - **Privacy check:** `git status` shows nothing from `personal/` or `data/`, and no new
+     `print` or log line in `tools/` outputs unmasked transaction data (use `_mask`).
+   - **UI changes** (once the frontend exists): open the page in a browser, exercise the change,
+     and attach a screenshot made with synthetic data only.
+3. **Open a PR** with Summary, Testing (the output above), Risk tier, and How to revert.
+4. **Answer every review finding:** fix it, or reply with why not. None left silent.
+5. **The owner merges.** Claude never merges and never calls a PR ready before its CI is green.
+6. **Whoever asked for the change owns it after it lands**, including the revert if it breaks.
+
 ## Hard rules
 
 1. **Privacy.** Never commit, print into logs, paste into prompts, or send anywhere anything from
