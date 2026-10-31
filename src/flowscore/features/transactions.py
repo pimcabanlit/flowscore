@@ -6,7 +6,8 @@ translate Berka rows with flowscore.adapters.berka and call it, so research resu
 import pandas as pd
 
 from flowscore.adapters.berka import to_canonical
-from flowscore.features.cashflow import WINDOW_FEATURES, opening_balance, window_features, window_slice
+from flowscore.features.cashflow import (SCALE_FREE_FEATURES, WINDOW_FEATURES, income_denominator, opening_balance,
+                                         scale_free_features, window_features, window_slice)
 from flowscore.schema import ordered
 
 FEATURES = WINDOW_FEATURES
@@ -17,8 +18,10 @@ def loan_features(tx: pd.DataFrame, loan_date: pd.Timestamp, opening_balance: fl
     return window_features(to_canonical(tx), loan_date, opening_balance, months)
 
 
-def build_transaction_features(loans: pd.DataFrame, trans: pd.DataFrame, months: int = 3) -> pd.DataFrame:
-    """One row per loan. loans: loan_id, account_id, loan_date. trans: full Berka table with trans_date."""
+def build_transaction_features(loans: pd.DataFrame, trans: pd.DataFrame, months: int = 3,
+                               scale_free: bool = False) -> pd.DataFrame:
+    """One row per loan. loans: loan_id, account_id, loan_date. trans: full Berka table with trans_date.
+    scale_free=True returns SCALE_FREE_FEATURES plus `income` (D21) instead of the research features."""
     canon = to_canonical(trans[trans["account_id"].isin(loans["account_id"])])
     by_account = {a: ordered(g) for a, g in canon.groupby("account_id")}
     empty = canon.iloc[0:0]
@@ -29,5 +32,8 @@ def build_transaction_features(loans: pd.DataFrame, trans: pd.DataFrame, months:
         f = window_features(window_slice(hist, r.loan_date, months), r.loan_date,
                             opening_balance(hist, start) if len(hist[hist["transaction_date"] < start]) else 0.0,
                             months)
+        if scale_free:
+            income = income_denominator(window_slice(hist, r.loan_date, months), r.loan_date, months)
+            f = {"income": income, **scale_free_features(f, income)}
         rows.append({"loan_id": r.loan_id, **f})
     return pd.DataFrame(rows).sort_values("loan_id").reset_index(drop=True)

@@ -4,8 +4,9 @@ import pandas as pd
 import pytest
 
 from flowscore.adapters.berka import category, to_canonical
-from flowscore.features.cashflow import (features_as_of, monthly_salary, obligation_features, opening_balance,
-                                         salary_baseline, window_features, window_slice)
+from flowscore.features.cashflow import (SCALE_FREE_FEATURES, features_as_of, income_denominator, monthly_inflows,
+                                         monthly_salary, obligation_features, opening_balance, salary_baseline,
+                                         scale_free_features, window_features, window_slice)
 from flowscore.schema import validate
 
 T = pd.Timestamp
@@ -147,3 +148,66 @@ def test_berka_to_canonical_splits_sides():
     c = to_canonical(b)
     assert list(c["credit_amount"].fillna(0)) == [100, 0] and list(c["debit_amount"].fillna(0)) == [0, 40]
     assert list(c["transaction_category"]) == ["interest", "cash_withdrawal"] and validate(c) == []
+
+
+# ---------- 4. scale-free features and the income denominator (D21)
+HAND = [
+    (1, "1996-01-05", None, 1000, 1500, "transfer_in"),
+    (2, "1996-01-20", 300, None, 1200, "bills"),
+    (3, "1996-02-10", None, 1000, 2200, "transfer_in"),
+    (4, "1996-02-28", None, 10, 2210, "interest"),
+    (5, "1996-03-05", 2500, None, -290, "cash_withdrawal"),
+    (6, "1996-03-06", 20, None, -310, "penalty_interest"),
+    (7, "1996-03-15", None, 1600, 1290, "transfer_in"),
+]
+
+
+def test_income_denominator_hand_example():
+    t = canon(HAND)
+    # buckets back from 1 Apr: Mar = 1600, Feb = 1000 (the 10 of interest is excluded), Jan = 1000
+    assert list(monthly_inflows(t, T("1996-04-01"))) == [1600, 1000, 1000]
+    assert income_denominator(t, T("1996-04-01")) == 1000                    # median(1600, 1000, 1000)
+    assert income_denominator(t, T("1996-04-01"), months=2) == 1300          # median(1600, 1000) = (1600+1000)/2
+
+
+def test_income_denominator_counts_salary_and_transfers_alike():
+    # the definition must not depend on a salary label (Berka has none)
+    a = canon([(1, "2026-01-15", None, 500, 500, "salary"), (2, "2026-02-15", None, 500, 1000, "salary"),
+               (3, "2026-03-15", None, 500, 1500, "salary")])
+    b = a.assign(transaction_category="transfer_in")
+    assert income_denominator(a, T("2026-04-01")) == income_denominator(b, T("2026-04-01")) == 500
+
+
+def test_income_denominator_is_nan_not_zero():
+    assert np.isnan(income_denominator(canon([]), T("2026-04-01")))           # no transactions
+    only_interest = canon([(1, "2026-03-31", None, 5, 5, "interest")])
+    assert np.isnan(income_denominator(only_interest, T("2026-04-01")))      # interest is not income
+    one_month = canon([(1, "2026-03-10", None, 900, 900, "salary")])         # buckets 900, 0, 0 -> median 0
+    assert np.isnan(income_denominator(one_month, T("2026-04-01")))
+
+
+def test_scale_free_features_hand_example():
+    t = canon(HAND)
+    f = window_features(t, T("1996-04-01"), opening=500)
+    s = scale_free_features(f, income_denominator(t, T("1996-04-01")))
+    assert list(s) == SCALE_FREE_FEATURES
+    assert s["min_balance_to_income"] == pytest.approx(-310 / 1000)
+    exp_avg = (500*4 + 1500*15 + 1200*21 + 2200*18 + 2210*6 - 290 - 310*9 + 1290*17) / 91
+    assert s["avg_balance_to_income"] == pytest.approx(exp_avg / 1000)
+    assert s["inflow_cv"] == f["inflow_cv"] and s["months_net_outflow"] == 1
+    assert s["outflow_inflow_ratio"] == pytest.approx(2820 / 3600)
+
+
+def test_scale_free_features_do_not_change_with_currency():
+    t = canon(HAND)
+    money = ["debit_amount", "credit_amount", "running_balance"]
+    t50 = t.assign(**{c: t[c] * 50 for c in money})                         # same account, another currency
+    s1 = scale_free_features(window_features(t, T("1996-04-01"), 500), income_denominator(t, T("1996-04-01")))
+    s50 = scale_free_features(window_features(t50, T("1996-04-01"), 500 * 50), income_denominator(t50, T("1996-04-01")))
+    assert s1 == pytest.approx(s50, nan_ok=True)
+
+
+def test_scale_free_features_missing_income_gives_nan_ratios():
+    s = scale_free_features({"inflow_cv": np.nan, "outflow_inflow_ratio": np.nan, "months_net_outflow": 3,
+                             "min_balance": -50.0, "avg_daily_balance": 20.0}, np.nan)
+    assert np.isnan(s["min_balance_to_income"]) and np.isnan(s["avg_balance_to_income"])

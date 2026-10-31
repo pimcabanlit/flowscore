@@ -10,7 +10,7 @@ for logistic regression, random forest and CatBoost.
 ## Setup
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-lock.txt   # exact verified versions (Python 3.12)
 ```
 Put the unzipped Berka CSVs (loan, account, trans, disp, card, district, client, order) in `data/raw/`.
 They are not committed to the repo.
