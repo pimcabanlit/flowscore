@@ -8,6 +8,7 @@ plainly, work in small verified steps, and say what each step proves.
 Full research write-up (methods, results, limitations, defence guide):
 https://claude.ai/artifact/2axzRJypSYyHAj7AULgjR7
 Why things are the way they are: `docs/decisions.md`. Read it before changing anything it covers.
+What the app must do, slice by slice: `docs/specs/`.
 
 ## Current state
 
@@ -17,7 +18,7 @@ Why things are the way they are: `docs/decisions.md`. Read it before changing an
 - **BPI statement tools: done** (`tools/`), local use only.
 - **Feature library: done.** `src/flowscore/features/cashflow.py` on the canonical schema,
   guarded by a golden test.
-- **App: not started.** Next is slice 1 (see "App plan").
+- **App: not started.** Next is slice 1 (see "App plan" and `docs/specs/01-scoring-api.md`).
 
 ## Layout
 
@@ -118,9 +119,14 @@ models), not by technical type; this overrides section 9.3 of the spec.
 
 ## App plan (thin slices; each must work end to end before the next)
 
+Full specs, with numbered requirements, acceptance checks and open questions, are in
+`docs/specs/` (one file per slice). The list below is the summary; the specs win where they
+differ.
+
+
 1. **Scoring API.** Train the app model once (CatBoost, transaction features) and save it as a
    versioned artifact with its feature list, training data version and metrics. FastAPI
-   endpoint: canonical transactions in -> features + PD + SHAP contributions out. No DB yet.
+   endpoint: canonical transactions in -> features + risk band + SHAP contributions out. No DB yet.
    The Berka -> Philippines gap is settled by D21: scale-free features (`SCALE_FREE_FEATURES`),
    a relative risk band instead of a PD, per-feature out-of-range flags.
 2. **Synthetic Philippine borrowers** for the demo, calibrated on statement *patterns*
