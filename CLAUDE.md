@@ -82,6 +82,8 @@ and every change must be cheap to undo.
 4. **Answer every review finding:** fix it, or reply with why not. None left silent.
    Reviewers (human or AI) follow `REVIEW.md`: what counts as Important, and how to report.
 5. **The owner merges.** Claude never merges and never calls a PR ready before its CI is green.
+   The required check is `CI / tests` (`.github/workflows/ci.yml`: pytest on Python 3.12 from the
+   lock, minus torch/tabpfn). It cannot run the golden test (no Berka data in CI).
 6. **Whoever asked for the change owns it after it lands**, including the revert if it breaks.
 
 ## Hard rules

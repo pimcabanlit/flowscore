@@ -1,0 +1,35 @@
+name: CI
+
+# Runs on every PR and every push to main, with no path filters,
+# so the "tests" job always reports and can be a required check.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-lock.txt
+      # Owner's verified lock, minus torch and tabpfn: only scripts/run_tabpfn.py needs them,
+      # and on Linux torch pulls several GB of CUDA packages.
+      - name: Install locked dependencies
+        run: |
+          grep -vE '^(torch|tabpfn)==' requirements-lock.txt > ci-requirements.txt
+          pip install -r ci-requirements.txt
+      # The golden test skips here (no data/raw/); research-frozen PRs still need the
+      # owner's local evidence (CLAUDE.md, "How changes land").
+      - name: Run tests
+        env:
+          PYTHONPATH: src
+        run: pytest -q tests
