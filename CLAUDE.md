@@ -77,7 +77,8 @@ and every change must be cheap to undo.
      `print` or log line in `tools/` outputs unmasked transaction data (use `_mask`).
    - **UI changes** (once the frontend exists): open the page in a browser, exercise the change,
      and attach a screenshot made with synthetic data only.
-3. **Open a PR** with Summary, Testing (the output above), Risk tier, and How to revert.
+3. **Open a PR** with Summary, Testing (the output above), Risk tier (with the file that set it;
+   see "Risk tiers" in `REVIEW.md`), and How to revert.
 4. **Answer every review finding:** fix it, or reply with why not. None left silent.
    Reviewers (human or AI) follow `REVIEW.md`: what counts as Important, and how to report.
 5. **The owner merges.** Claude never merges and never calls a PR ready before its CI is green.

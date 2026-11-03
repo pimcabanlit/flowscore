@@ -44,8 +44,23 @@ These are the failures that matter here. Any instance is **Important**, never a 
 Lock and generated files (`requirements-lock.txt`), test fixtures (`tests/fixtures/*.pdf`),
 and committed research outputs except to check rule 3 (`results/*.csv`, `results/run_log.txt`).
 
+## Risk tiers
+
+The tier is set by what the change touches, not by who wrote it. The **highest tier touched
+wins**. When unsure, go **one tier up**. Every PR states its tier and the file that set it.
+
+| Tier | Paths in this repo | Owner before merging |
+|---|---|---|
+| **High** | `src/flowscore/features/`, `src/flowscore/adapters/`, `schema.py`, `window.py`, `experiment.py`, `data.py`, `results/`, `scripts/run_*.py`, `tools/` (handles personal data), `.gitignore`, `.gitattributes`, `requirements*.txt`, `.github/workflows/`; later: auth, migrations (`alembic/`), LLM prompts and tools, model artifacts, anything that deletes data or reads secrets | Read the whole diff and the pasted evidence, and run `/security-review`. Research-frozen paths also need the Berka evidence from `CLAUDE.md`. |
+| **Medium** | `CLAUDE.md`, `REVIEW.md`, `docs/decisions.md`, `.github/` (non-workflow), `README.md` when it changes commands or results, other `src/` and `tests/` changes | Read the summary, the evidence and the review findings. |
+| **Low** | Wording-only doc fixes (typos, links), comments, new tests that touch no code under test | Merge on green CI. |
+
+`CLAUDE.md` and `REVIEW.md` are never below Medium. Lowering an existing test's expected value
+or deleting a test is High.
+
 ## Summary
 
-Start the summary with the PR's risk tier and the count, e.g.
+Start the summary with the risk tier from the table above and the count, e.g.
 `Medium · 2 Important, 1 nit`, then the findings. If there are none, write exactly
 `No issues found.` after the tier.
+If the PR states a lower tier than the table gives, say so first, with the file that sets it.
