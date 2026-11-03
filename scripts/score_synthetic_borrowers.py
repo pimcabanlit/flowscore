@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))            # for backend.app
 
 from fastapi.testclient import TestClient                       # noqa: E402
 
-from flowscore.synthetic import read                             # noqa: E402
+from flowscore_demo.synthetic import read                             # noqa: E402
 
 from backend.app.core.app import create_app                      # noqa: E402
 
