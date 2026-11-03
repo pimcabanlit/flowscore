@@ -124,3 +124,18 @@ converting currencies across 30 years and two economies has no empirical basis.
 Research results are unchanged: the research feature path and `results/` are untouched.
 *Reopen if:* labelled Philippine outcomes become available (then validate or retrain), or the
 measured cost is large enough that a different transfer approach is worth trying.
+
+**D22. Slice 1 artifact choices: committed model, out-of-fold reference, 50/80 band cut-offs.**
+Answers the spec's open questions 1 to 3 with its recommendations, adopted by default in the
+slice 1 PR; the owner can still overrule them before merging.
+- *Artifact committed:* `models/catboost-sf-v1/` is committed, like `results/features.csv`: it is
+  small and derived from public Berka data. The API tests do not need it (they build a tiny
+  artifact from made-up rows with the same `build_artifact`), so CI never needs Berka data.
+- *Percentile reference:* each Berka loan's out-of-fold CatBoost score, averaged over the 10
+  repeats of the D21 folds. In-sample scores are overfitted and push known defaulters to the
+  extremes, which would make a new borrower look safer than they are. The training script checks
+  that these scores reproduce the D21 CV AUROC before it writes anything.
+- *Band cut-offs:* `lower` below the 50th percentile, `middle` from 50 to 80, `higher` above 80,
+  so roughly the top fifth of the reference population is flagged. Stored in the artifact's
+  `metadata.json`, not in the service code.
+*Reopen if:* a lender needs a different share flagged, or Philippine outcomes allow calibration.

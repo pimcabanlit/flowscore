@@ -15,26 +15,26 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 
 | Req | Status | Date | PR | Evidence |
 |---|---|---|---|---|
-| S1-R1 | planned | | | |
-| S1-R2 | planned | | | |
-| S1-R3 | planned | | | |
-| S1-R4 | planned | | | |
-| S1-R5 | planned | | | |
-| S1-R6 | planned | | | |
-| S1-R7 | planned | | | |
-| S1-R8 | planned | | | |
-| S1-R9 | planned | | | |
-| S1-R10 | planned | | | |
-| S1-R11 | planned | | | |
-| S1-R12 | planned | | | |
-| S1-R13 | planned | | | |
-| S1-R14 | planned | | | |
-| S1-R15 | planned | | | |
-| S1-R16 | planned | | | |
-| S1-R17 | planned | | | |
-| S1-R18 | planned | | | |
-| S1-R19 | planned | | | |
-| S1-R20 | planned | | | |
+| S1-R1 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_committed_artifact_matches_the_research; owner's run: CV AUROC 0.7913 reproduces results/d21_scale_free.csv |
+| S1-R2 | implemented | 2026-11-03 | #9 | owner's machine: two runs of scripts/train_app_model.py gave the same training_predictions_sha256 (c6d97b85...); script also checks two in-process fits match |
+| S1-R3 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_artifact_contents (real artifact: train_app_model.py run pending) |
+| S1-R4 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_artifact_with_wrong_features_is_refused |
+| S1-R5 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_every_validation_error_is_listed, test_transactions_before_history_start_are_rejected |
+| S1-R6 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_short_history_is_refused |
+| S1-R7 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_transactions_on_or_after_as_of_change_nothing, test_future_transaction_never_sets_the_opening_balance |
+| S1-R8 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_backend_layout_and_one_feature_library (service calls cashflow.py only; no wrapper added) |
+| S1-R9 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_percentile_is_share_of_strictly_lower_scores, test_percentile_matches_reference_scores, test_raw_score_is_never_returned |
+| S1-R10 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_band_cutoffs_come_from_the_artifact |
+| S1-R11 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_shap_adds_up_to_log_odds (CatBoost's own ShapValues; no shap package call) |
+| S1-R12 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_missing_income_is_null_not_zero |
+| S1-R13 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_far_out_of_range_is_refused, test_range_rule_counts_only_present_features |
+| S1-R14 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_notice_is_always_present |
+| S1-R15 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_hand_worked_account_is_scored, test_health; uvicorn smoke run in PR #9 |
+| S1-R16 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_backend_layout_and_one_feature_library |
+| S1-R17 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_model_is_held_in_memory |
+| S1-R18 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_logs_hold_no_transaction_data |
+| S1-R19 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_hand_worked_account_is_scored, test_missing_income_is_null_not_zero, test_far_out_of_range_is_refused |
+| S1-R20 | implemented | 2026-11-03 | #9 | CI / tests runs tests/test_scoring_api.py on a tiny synthetic artifact built with build_artifact |
 
 ## In scope
 
@@ -189,14 +189,20 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 1. **Should the artifact be committed to git?**
    *Recommendation:* yes, `models/` is committed. The file is small, it lets CI run the API
    tests, and it is derived from public Berka data in the same way `results/features.csv` is.
+   *Adopted by default (D22), pending the owner's confirmation.*
 2. **Where should the band cut-offs sit?**
    *Recommendation:* `lower` below the 50th percentile, `middle` from 50 to 80, `higher` above
    80. Under these cut-offs roughly the top fifth is flagged. Record the choice as a decision.
+   *Adopted by default (D22), pending the owner's confirmation.*
 3. **Which scores define the percentile reference?** The options are in-sample scores from the
    final model, or out-of-fold scores from CV.
    *Recommendation:* out-of-fold mean scores. In-sample scores are overfitted, which pushes
    known defaulters to the extremes and would make new borrowers look safer than they are.
+   *Adopted by default (D22), pending the owner's confirmation.*
 4. **Which new dependencies should be added?** The slice needs `fastapi`, `uvicorn`, and
    `httpx` for the test client. `pydantic` v2 comes with FastAPI.
    *Recommendation:* add these to `requirements.txt` and the lock in their own flagged PR,
    before any API code (hard rule 10).
+   *Done as the first, separate commit of the slice 1 PR:* `fastapi`, `uvicorn`, and FastAPI's
+   own dependencies (`starlette`, `opentelemetry-api`, `annotated-doc`). `httpx` is not needed:
+   the test client uses `httpx2`, which the lock already had.
