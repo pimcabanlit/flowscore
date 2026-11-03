@@ -149,13 +149,13 @@ Answers the slice 1 spec's open questions 1 to 4. Confirmed by owner (2026-11-03
 *Reopen if:* a lender needs a different share flagged, or Philippine outcomes allow calibration.
 
 **D23. Slice 2 demo borrowers: patterns from public figures, savings-account rules, committed.**
-Answers the slice 2 draft spec's open questions. Proposed in the slice 2 PR; the owner confirms by merging.
+Answers the slice 2 draft spec's open questions. Confirmed by owner (merged in #11, 2026-11-03).
 - *No new categories:* InstaPay and PESONet fees are `fee` rows next to their transfer, which
   uses `transfer_in`, `transfer_out`, `rent` or `loan_payment`. `schema.py` (High tier) is untouched.
 - *30 borrowers, 6 per persona,* enough for the borrower list and portfolio views of later slices.
 - *Near zero, not overdraft:* Philippine savings and payroll accounts rarely go negative (D21), so
-  the fifth persona runs its balance down to zero and never below. Flexible spending is cut to
-  what the account holds; a fixed payment it cannot cover is skipped.
+  the fifth persona runs its balance down to zero and never below. A cash withdrawal is cut to
+  what the account holds; any other debit it cannot cover is declined, never charged in part.
 - *Dated fee schedule:* PHP 25 InstaPay and PHP 50 PESONet until 2026-06-30, free from 2026-07-01,
   when the big banks waived both. The 12-month history (2025-10 to 2026-09) spans the change, as
   a real statement would.
