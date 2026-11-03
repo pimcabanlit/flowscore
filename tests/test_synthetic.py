@@ -93,6 +93,22 @@ def test_savings_account_never_goes_negative():  # S2-R5
     ]
 
 
+def test_a_load_is_declined_not_charged_in_part():  # S2-R5
+    # Opening 10.00 and two loads a month: the smallest load is 50, so both are declined. A load
+    # is never cut to the 10.00 the account holds (review of #11: 70 partial loads like 9.18).
+    p = Profile("near_zero", opening_balance=10, phone_loads=2, interest=False)
+    assert rows_of(p, D(2025, 11, 1), D(2025, 12, 1)) == []
+
+
+def test_no_row_on_or_after_the_end_date():  # S2-R8
+    # History ending mid-month: the month-end interest (30 Nov) falls after the end and is not
+    # written (review of #11: it used to be, dated after as_of).
+    p = Profile("steady_salaried", opening_balance=100_000)
+    assert rows_of(p, D(2025, 11, 1), D(2025, 11, 15)) == []
+    assert rows_of(p, D(2025, 11, 1), D(2025, 12, 1)) == [("2025-11-30", "", "4.16", "100004.16", "interest")]
+    # 100,000.00 x 0.0625% / 12 = 5.2083; less 20% tax = 4.1667 -> 4.16 (whole centavos, truncated)
+
+
 def test_interest_is_net_of_final_tax():  # S2-R1
     # 1,200,000.00 at 0.0625% a year: a month is 62.50, less 20% tax = 50.00.
     p = Profile("steady_salaried", opening_balance=1_200_000)
@@ -170,6 +186,9 @@ def test_every_account_is_valid(committed):  # S2-R7, S2-R8
         bal, dr, cr = cents(rows.running_balance), cents(rows.debit_amount), cents(rows.credit_amount)
         assert (bal.diff().iloc[1:] == (cr - dr).iloc[1:]).all(), b.borrower_id
         assert (bal >= 0).all()
+        # loads come in their denominations only; never charged in part
+        loads = rows.debit_amount[rows.transaction_category == "phone_load"].astype(float)
+        assert loads.isin(synthetic.LOAD_DENOMINATIONS).all(), b.borrower_id
         # chronological in id order, so ties on a day keep the statement's order
         assert list(rows.transaction_id) == sorted(rows.transaction_id)
         assert rows.transaction_date.is_monotonic_increasing

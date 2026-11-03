@@ -18,10 +18,10 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 | S2-R2 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_borrower_set_covers_every_persona |
 | S2-R3 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_borrower_set_covers_every_persona |
 | S2-R4 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_same_seed_same_bytes, test_committed_files_match_the_generator |
-| S2-R5 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_savings_account_never_goes_negative, test_every_account_is_valid |
+| S2-R5 | implemented | 2026-11-03 | #12 | tests/test_synthetic.py::test_savings_account_never_goes_negative, test_a_load_is_declined_not_charged_in_part, test_every_account_is_valid (first in #11; partial loads fixed in #12) |
 | S2-R6 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_borrowers_are_clearly_fictional |
 | S2-R7 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_every_account_is_valid |
-| S2-R8 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_every_account_is_valid |
+| S2-R8 | implemented | 2026-11-03 | #12 | tests/test_synthetic.py::test_every_account_is_valid, test_no_row_on_or_after_the_end_date (first in #11; end-date fix in #12) |
 | S2-R9 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_every_borrower_is_scored (all 30 scored, none refused) |
 | S2-R10 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_score_table_names_the_top_driver; table pasted in the PR |
 | S2-R11 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_hand_worked_steady_account |
@@ -58,7 +58,8 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
     2026-07-01, when the big banks waived them. Each fee is its own `fee` row next to its
     transfer;
   - credit card payments, a loan payment by PESONet, rent by InstaPay, utility bills, phone load;
-  - cash withdrawals in multiples of PHP 500 (sweeps in multiples of PHP 100);
+  - cash withdrawals in multiples of PHP 500 (a sweep, or a withdrawal cut to the balance, in
+    multiples of PHP 100);
   - month-end savings interest net of the 20% final tax.
 
   Amounts come from public sources: PSA wage and remittance statistics, the NCR wage order,
@@ -83,9 +84,10 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 - **S2-R4. Deterministic.** The same seed produces byte-identical output, and the seed is a
   script argument (`--seed`, default 2026). The committed files equal the generator's output
   for the default seed; a test regenerates them and compares bytes.
-- **S2-R5. Savings account rules.** The balance never goes below zero. A flexible debit (cash,
-  card purchase, phone load) is cut to what the account holds. A fixed payment (rent, bills,
-  card, loan) that the account cannot cover is skipped, as a declined payment would be.
+- **S2-R5. Savings account rules.** The balance never goes below zero. A cash withdrawal is cut
+  to what the account holds, in whole PHP 100s, as at an ATM. Any other debit the account cannot
+  cover (rent, bills, card or loan payment, card purchase, phone load) is skipped, as a declined
+  payment would be; a load or a purchase is never charged in part.
 
 ### Output
 

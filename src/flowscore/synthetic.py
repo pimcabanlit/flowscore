@@ -28,9 +28,10 @@ two Eid holidays move every year and are not modelled; none of them falls on a p
 2025-10-01 and 2026-09-30.
 
 Account rules (S2-R5). These are savings or payroll accounts, so the balance never goes below
-zero (D21: Philippine savings accounts rarely go negative). A flexible debit (cash, card
-purchase, load) is cut to what the account holds; a fixed payment (rent, bills, card, loan)
-that it cannot cover is skipped, as a declined payment would be.
+zero (D21: Philippine savings accounts rarely go negative). A cash withdrawal is cut to what
+the account holds, in whole PHP 100s, as at an ATM. Any other debit the account cannot cover
+(rent, bills, card or loan payment, card purchase, phone load) is skipped, as a declined
+payment would be: a load or a purchase is never charged in part.
 
 Money is held in whole centavos internally, so running balances are exact.
 """
@@ -226,7 +227,7 @@ class _Event:
     seq: int
     category: str = field(compare=False)
     amount: int = field(compare=False)              # centavos; ignored for sweeps and interest
-    fixed: bool = field(compare=False, default=True)
+    divisible: bool = field(compare=False, default=False)    # cash: cut to the balance, not declined
     channel: str = field(compare=False, default=None)
     sweep_keep: int = field(compare=False, default=0)   # > 0: withdraw all but this, to 100s
 
@@ -259,7 +260,7 @@ def _events(p: Profile, rng: np.random.Generator, start: dt.date, end: dt.date) 
                 if m == 12 and i == 0 and p.thirteenth_month:
                     add(d, "salary", p.thirteenth_month, credit=True)
                 if p.sweep_after_payday:
-                    add(d + dt.timedelta(days=1), "cash_withdrawal", fixed=False, sweep_keep=cents(p.sweep_keep))
+                    add(d + dt.timedelta(days=1), "cash_withdrawal", divisible=True, sweep_keep=cents(p.sweep_keep))
             if p.family_support_out:
                 add(paydays(y, m)[0] + dt.timedelta(days=1), "transfer_out", p.family_support_out,
                     channel="instapay")
@@ -294,17 +295,17 @@ def _events(p: Profile, rng: np.random.Generator, start: dt.date, end: dt.date) 
             add(dt.date(y, m, 23), "credit_card_payment", round(vary(p.card_payment), 2))
 
         for d in _days(rng, y, m, p.phone_loads):
-            add(d, "phone_load", float(rng.choice(LOAD_DENOMINATIONS)), fixed=False)
+            add(d, "phone_load", float(rng.choice(LOAD_DENOMINATIONS)))
         if p.cash_share:
             k = int(rng.integers(3, 6))
             for d, a in zip(_days(rng, y, m, k), _split(rng, vary(p.cash_share * p.income_level), k)):
                 if round(a, -2) >= 500:
-                    add(d, "cash_withdrawal", round(a / 500) * 500.0, fixed=False)
+                    add(d, "cash_withdrawal", round(a / 500) * 500.0, divisible=True)
         if p.card_purchase_share:
             k = int(rng.integers(3, 9))
             for d, a in zip(_days(rng, y, m, k), _split(rng, vary(p.card_purchase_share * p.income_level), k)):
-                add(d, "card_purchase", round(a, 2), fixed=False)
-        if p.interest:
+                add(d, "card_purchase", round(a, 2))
+        if p.interest and start <= dt.date(y, m, last) < end:      # never dated on or after end
             ev.append(_Event(dt.date(y, m, last), 2, len(ev), "interest", 0))
     return sorted(ev)
 
@@ -335,10 +336,10 @@ def simulate(p: Profile, rng: np.random.Generator, borrower_id: str,
         amount = e.amount
         if e.sweep_keep:
             amount = (bal - e.sweep_keep) // 10_000 * 10_000
-        elif amount + fee > bal and not e.fixed:
-            amount = (bal - fee) // 10_000 * 10_000 if e.category == "cash_withdrawal" else bal - fee
+        elif amount + fee > bal and e.divisible:
+            amount = (bal - fee) // 10_000 * 10_000
         if amount <= 0 or amount + fee > bal:
-            continue                            # cannot be covered: skipped (fixed) or nothing left
+            continue                            # cannot be covered: declined, or no cash left
         post(e.day, e.category, amount, credit=False)
         if fee:
             post(e.day, "fee", fee, credit=False)
