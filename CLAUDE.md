@@ -18,8 +18,10 @@ What the app must do, slice by slice: `docs/specs/`.
 - **BPI statement tools: done** (`tools/`), local use only.
 - **Feature library: done.** `src/flowscore/features/cashflow.py` on the canonical schema,
   guarded by a golden test.
-- **App: slice 1 (scoring API) in progress.** `backend/` and `scripts/train_app_model.py`; the
+- **App: slice 1 (scoring API) done.** `backend/` and `scripts/train_app_model.py`; the
   real artifact `models/catboost-sf-v1/` is trained on a machine with `data/raw/` (D22).
+- **App: slice 2 (synthetic borrowers) done.** `src/flowscore/synthetic.py` writes 30 fictional
+  borrowers to `demo/synthetic/` (D23); demo only, never research evidence.
 
 ## Layout
 
@@ -32,11 +34,15 @@ src/flowscore/
   adapters/berka.py       Berka codes -> canonical schema
   window.py, data.py      Berka loading and observation window
   experiment.py           feature sets, models, CV, bootstrap helpers
+  synthetic.py            demo-only synthetic Philippine borrowers (slice 2, D23)
 scripts/run_research.py   RQ1-RQ5 end to end (~10 min)
 scripts/run_tabpfn.py     TabPFN on the same folds (~50 min CPU; needs TABPFN_TOKEN)
 scripts/train_app_model.py  app model artifact -> models/catboost-sf-v1/ (needs data/raw/)
+scripts/generate_synthetic_borrowers.py  demo borrowers -> demo/synthetic/ (seeded, byte-identical)
+scripts/score_synthetic_borrowers.py     score every demo borrower through the API, print a table
 backend/app/              FastAPI scoring API, by domain: assessments/, models/, core/
 models/                   versioned model artifacts (committed; D22)
+demo/synthetic/           synthetic demo borrowers and transactions (committed; D23)
 tools/bpi_parser.py       BPI statement PDF -> canonical CSV (local only)
 tools/verify_transactions.py  reconcile parsed CSV against statement totals
 tools/personal_features.py    features on the owner's own statements
@@ -55,16 +61,18 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 62 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 74 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
 python tools\personal_features.py personal\transactions.csv
 python scripts\train_app_model.py             # app model artifact (needs data/raw/)
 uvicorn backend.app.main:app --reload         # scoring API on :8000 (needs the artifact)
+python scripts\generate_synthetic_borrowers.py   # demo/synthetic/ (--seed, default 2026)
+python scripts\score_synthetic_borrowers.py      # persona, band, top SHAP driver per borrower
 ```
 
-62 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+74 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 
