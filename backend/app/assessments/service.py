@@ -92,6 +92,12 @@ def shap_values(model: LoadedModel, X: pd.DataFrame) -> tuple:
 def score(model: LoadedModel, tx: pd.DataFrame, as_of) -> dict:
     """The full assessment for one borrower. `tx` is a validated canonical table."""
     income, feats = compute_features(tx, as_of)
+    return score_features(model, income, feats, as_of)
+
+
+def score_features(model: LoadedModel, income, feats: dict, as_of) -> dict:
+    """The assessment from features already computed: by `score` above, or read back from a
+    stored snapshot (S3-R3). A missing value may be NaN or None; both mean missing."""
     missing, out_of_range, refused = range_check(feats, model.metadata["reference_ranges"])
     result = {
         "status": "refused" if refused else "scored",

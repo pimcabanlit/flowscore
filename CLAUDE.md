@@ -23,6 +23,9 @@ What the app must do, slice by slice: `docs/specs/`.
 - **App: slice 2 (synthetic borrowers) done.** `src/flowscore_demo/synthetic.py` writes 30
   fictional borrowers to `demo/synthetic/` (D23); demo only, never research evidence, and kept
   out of the research package (nothing in `src/flowscore/` may import it).
+- **App: slice 3 (database) done.** SQLAlchemy 2 async + Alembic (`alembic/`); Postgres (Neon)
+  in deployment, SQLite in tests (D24). `scripts/seed_demo_database.py` loads the synthetic
+  borrowers; assessments and feature snapshots are append-only (database triggers).
 
 ## Layout
 
@@ -43,7 +46,10 @@ scripts/run_tabpfn.py     TabPFN on the same folds (~50 min CPU; needs TABPFN_TO
 scripts/train_app_model.py  app model artifact -> models/catboost-sf-v1/ (needs data/raw/)
 scripts/generate_synthetic_borrowers.py  demo borrowers -> demo/synthetic/ (seeded, byte-identical)
 scripts/score_synthetic_borrowers.py     score every demo borrower through the API, print a table
-backend/app/              FastAPI scoring API, by domain: assessments/, models/, core/
+backend/app/              FastAPI API, by domain: borrowers/, transactions/, features/,
+                          assessments/, models/ (each with its tables and repository), core/
+alembic/, alembic.ini     database migrations (High tier); URL only from FLOWSCORE_DATABASE_URL
+scripts/seed_demo_database.py  load demo/synthetic/ into the database (synthetic borrowers only)
 models/                   versioned model artifacts (committed; D22)
 demo/synthetic/           synthetic demo borrowers and transactions (committed; D23)
 tools/bpi_parser.py       BPI statement PDF -> canonical CSV (local only)
@@ -64,7 +70,7 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 77 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 103 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
@@ -73,9 +79,12 @@ python scripts\train_app_model.py             # app model artifact (needs data/r
 uvicorn backend.app.main:app --reload         # scoring API on :8000 (needs the artifact)
 python scripts\generate_synthetic_borrowers.py   # demo/synthetic/ (--seed, default 2026)
 python scripts\score_synthetic_borrowers.py      # persona, band, top SHAP driver per borrower
+$env:FLOWSCORE_DATABASE_URL="sqlite+aiosqlite:///flowscore-demo.db"   # or Neon; never in a file
+alembic upgrade head                            # create the tables (alembic downgrade base undoes it)
+python scripts\seed_demo_database.py            # load the synthetic borrowers (second run: no change)
 ```
 
-77 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+103 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 
