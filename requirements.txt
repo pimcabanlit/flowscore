@@ -10,3 +10,7 @@ pikepdf
 fastapi
 uvicorn
 httpx2  # test client for the API tests (Starlette TestClient); listed so they do not rely on TabPFN pulling it in
+sqlalchemy[asyncio]  # slice 3 database (D24): ORM and async engine; greenlet comes with the asyncio extra
+asyncpg              # Postgres driver for SQLAlchemy async (Neon in deployment)
+alembic              # migrations
+aiosqlite            # SQLite driver: tests and the offline demo run without a database server
