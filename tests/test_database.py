@@ -506,6 +506,13 @@ def test_logs_hold_no_transaction_data(db_url, caplog):        # S3-R14
         assert secret not in logged
 
 
+def test_database_errors_hide_their_parameters(db_url):  # S3-R14
+    with pytest.raises(DBAPIError) as err:
+        sql(db_url, "INSERT INTO transaction_batches (borrower_id, source, period_start, period_end, loaded_at) "
+                    "VALUES (:b, :s, :d, :d, CURRENT_TIMESTAMP)", b="SYN-404", s="secret-source-777", d="2026-01-01")
+    assert "secret-source-777" not in str(err.value) and "parameters hidden" in str(err.value)
+
+
 def _imports(path: Path) -> set:
     out = set()
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):

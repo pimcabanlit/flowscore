@@ -70,7 +70,7 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 103 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 104 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
@@ -84,7 +84,7 @@ alembic upgrade head                            # create the tables (alembic dow
 python scripts\seed_demo_database.py            # load the synthetic borrowers (second run: no change)
 ```
 
-103 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+104 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 

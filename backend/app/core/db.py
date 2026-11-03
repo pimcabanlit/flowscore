@@ -47,8 +47,10 @@ def utcnow() -> dt.datetime:
 
 def make_engine(url: str, **kwargs) -> AsyncEngine:
     """An async engine. On SQLite, foreign keys are switched on for every connection (SQLite
-    leaves them off by default), so both engines enforce the same rules."""
-    engine = create_async_engine(url, **kwargs)
+    leaves them off by default), so both engines enforce the same rules. Bound parameters are
+    hidden from error messages, so a failed statement never puts amounts or feature values into a
+    traceback or log (S3-R14)."""
+    engine = create_async_engine(url, hide_parameters=True, **kwargs)
     if engine.dialect.name == "sqlite":
         @event.listens_for(engine.sync_engine, "connect")
         def _fk_on(dbapi_conn, _record):

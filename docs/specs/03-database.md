@@ -28,7 +28,7 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 | S3-R11 | implemented | 2026-11-03 | #14 | tests/test_database.py::test_layout_by_domain, test_stored_features_are_the_hand_worked_values; tests/test_scoring_api.py::test_backend_layout_and_one_feature_library |
 | S3-R12 | implemented | 2026-11-03 | #14 | tests/test_database.py::test_seed_runs_twice_without_changes, test_seed_reports_a_borrower_that_differs, test_seed_refuses_bad_files |
 | S3-R13 | implemented | 2026-11-03 | #14 | tests/test_database.py::test_demo_code_stays_out |
-| S3-R14 | implemented | 2026-11-03 | #14 | tests/test_database.py::test_logs_hold_no_transaction_data |
+| S3-R14 | implemented | 2026-11-03 | #14 | tests/test_database.py::test_logs_hold_no_transaction_data, test_database_errors_hide_their_parameters |
 | S3-R15 | implemented | 2026-11-03 | #14 | tests/test_database.py::test_layout_by_domain |
 | S3-R16 | implemented | 2026-11-03 | #14 | tests/test_database.py::test_engine_under_test; CI runs SQLite, Postgres 16 run pasted in PR #14 |
 
