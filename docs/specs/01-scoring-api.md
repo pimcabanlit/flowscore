@@ -189,14 +189,20 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 1. **Should the artifact be committed to git?**
    *Recommendation:* yes, `models/` is committed. The file is small, it lets CI run the API
    tests, and it is derived from public Berka data in the same way `results/features.csv` is.
+   *Adopted by default (D22), pending the owner's confirmation.*
 2. **Where should the band cut-offs sit?**
    *Recommendation:* `lower` below the 50th percentile, `middle` from 50 to 80, `higher` above
    80. Under these cut-offs roughly the top fifth is flagged. Record the choice as a decision.
+   *Adopted by default (D22), pending the owner's confirmation.*
 3. **Which scores define the percentile reference?** The options are in-sample scores from the
    final model, or out-of-fold scores from CV.
    *Recommendation:* out-of-fold mean scores. In-sample scores are overfitted, which pushes
    known defaulters to the extremes and would make new borrowers look safer than they are.
+   *Adopted by default (D22), pending the owner's confirmation.*
 4. **Which new dependencies should be added?** The slice needs `fastapi`, `uvicorn`, and
    `httpx` for the test client. `pydantic` v2 comes with FastAPI.
    *Recommendation:* add these to `requirements.txt` and the lock in their own flagged PR,
    before any API code (hard rule 10).
+   *Done as the first, separate commit of the slice 1 PR:* `fastapi`, `uvicorn`, and FastAPI's
+   own dependencies (`starlette`, `opentelemetry-api`, `annotated-doc`). `httpx` is not needed:
+   the test client uses `httpx2`, which the lock already had.

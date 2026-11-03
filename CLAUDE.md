@@ -18,7 +18,8 @@ What the app must do, slice by slice: `docs/specs/`.
 - **BPI statement tools: done** (`tools/`), local use only.
 - **Feature library: done.** `src/flowscore/features/cashflow.py` on the canonical schema,
   guarded by a golden test.
-- **App: not started.** Next is slice 1 (see "App plan" and `docs/specs/01-scoring-api.md`).
+- **App: slice 1 (scoring API) in progress.** `backend/` and `scripts/train_app_model.py`; the
+  real artifact `models/catboost-sf-v1/` is trained on a machine with `data/raw/` (D22).
 
 ## Layout
 
@@ -33,6 +34,9 @@ src/flowscore/
   experiment.py           feature sets, models, CV, bootstrap helpers
 scripts/run_research.py   RQ1-RQ5 end to end (~10 min)
 scripts/run_tabpfn.py     TabPFN on the same folds (~50 min CPU; needs TABPFN_TOKEN)
+scripts/train_app_model.py  app model artifact -> models/catboost-sf-v1/ (needs data/raw/)
+backend/app/              FastAPI scoring API, by domain: assessments/, models/, core/
+models/                   versioned model artifacts (committed; D22)
 tools/bpi_parser.py       BPI statement PDF -> canonical CSV (local only)
 tools/verify_transactions.py  reconcile parsed CSV against statement totals
 tools/personal_features.py    features on the owner's own statements
@@ -51,14 +55,16 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 38 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 59 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
 python tools\personal_features.py personal\transactions.csv
+python scripts\train_app_model.py             # app model artifact (needs data/raw/)
+uvicorn backend.app.main:app --reload         # scoring API on :8000 (needs the artifact)
 ```
 
-38 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+59 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 

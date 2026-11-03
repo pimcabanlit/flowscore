@@ -19,6 +19,8 @@ They are not committed to the repo.
 ```bash
 PYTHONPATH=src pytest -q tests                 # golden test runs only if data/raw/ exists
 PYTHONPATH=src python scripts/run_research.py  # all results -> results/
+PYTHONPATH=src python scripts/train_app_model.py  # app model -> models/catboost-sf-v1/
+PYTHONPATH=src uvicorn backend.app.main:app       # scoring API: POST /api/v1/assessments/score
 ```
 
 ## Layout
