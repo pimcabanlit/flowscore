@@ -7,6 +7,7 @@
 - [ ] Research-frozen paths touched: run on a machine with `data/raw/`: every test passed, **none skipped**
 - [ ] Research-frozen paths touched: `python scripts\run_research.py` and `python scripts\run_scale_free.py`, then `git diff --exit-code results/` exits 0
 - [ ] Privacy: `git status` shows nothing from `personal/` or `data/`; no new unmasked print/log in `tools/`
+- [ ] Spec requirement implemented or dropped: its Status row in `docs/specs/` is updated (date, PR, evidence) and its test cites the id
 - [ ] UI change: checked in a browser, screenshot with synthetic data only
 
 ```
