@@ -35,3 +35,8 @@ PYTHONPATH=src python scripts/run_research.py  # all results -> results/
 
 ## Privacy
 Never commit personal bank statements. Keep them in `personal/` (git-ignored) and use them locally only.
+
+## Contributing
+Changes land through pull requests: see "How changes land" in `CLAUDE.md`, `REVIEW.md` for what
+reviewers check and the risk tiers, and the PR template in `.github/`. `main` requires the
+`tests` CI check to pass.
