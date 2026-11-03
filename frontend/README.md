@@ -24,5 +24,9 @@ npm ci
 npm run build; npm start                     # http://localhost:3000 (or `npm run dev`)
 ```
 
+`npm run audit:runtime` checks the packages that run in the browser or the Next.js server for
+known advisories (dev-only tools such as ESLint excluded); D25 records why the dev-only
+advisories `npm audit` reports are left as they are for now.
+
 Before a UI PR: `npm run check` (typecheck, lint, production build), then open the pages in a
 browser and attach screenshots made with synthetic data only (`CLAUDE.md`).

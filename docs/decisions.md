@@ -221,9 +221,20 @@ slice 4 PR; the owner confirms by merging.
   `react`, `react-dom`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`, and
   dev-only `tailwindcss` (with `@tailwindcss/turbopack`, the Next.js 16 template's loader),
   `typescript`, `eslint`, `eslint-config-next` and type packages. All are on the owner's stack.
-  `package-lock.json` is committed, so `npm ci` reproduces the install. `npm audit` reports 16
-  moderate advisories, all in ESLint's plugin chain (`minimatch`), which never ships to the
-  browser; the fix is a major ESLint change, left for a dependency PR.
+  `package-lock.json` is committed, so `npm ci` reproduces the install.
+- *Audit status (checked 2026-11-03):* `npm run audit:runtime` (`npm audit --omit=dev`) finds
+  **0** advisories in what the browser or the Next.js server runs. `npm audit` on everything
+  reports 16 moderate ones, all from one advisory, GHSA-g3hv-75wg-m249: `minimatch` below 11.0.1
+  can be slowed down by a crafted glob pattern. Every path to it goes through ESLint and its
+  plugins, which run only during `npm run lint`, on glob patterns from our own config, so no
+  user input reaches it. There is no clean fix yet. npm's suggested "fix" downgrades to
+  `eslint@4` and `eslint-config-next@12`, which would break linting. Forcing `minimatch@11` with
+  an npm override breaks `eslint-plugin-react`, `-import` and `-jsx-a11y`, which call it with the
+  version 3 API. ESLint 10 (tried) lints this code cleanly and removes the `eslint@9.39.5`
+  deprecation warning, but those three plugins (pulled in by `eslint-config-next` 16.4.4) do not
+  declare ESLint 10 support, and 15 of the 16 advisories remain. So ESLint stays on 9.39.5, the
+  maintenance line, until `eslint-config-next` supports ESLint 10; then upgrade both in one
+  dependency PR and recheck `npm audit`.
 - *Design resources used as guidance, not installed into the repo:* Impeccable (its "Operate"
   mode and craft checks) and UI UX Pro Max (its style and palette search) were read from a
   scratch clone during the build. Neither is a dependency of the app or committed here.
