@@ -60,9 +60,15 @@ class ScoreResponse(BaseModel):
     notice: str
 
 
+class BandCutoffs(BaseModel):
+    lower_below: float = Field(description="Percentiles below this are the lower band")
+    higher_above: float = Field(description="Percentiles above this are the higher band")
+
+
 class Health(BaseModel):
     model_version: str
     features: list[str]
+    band_cutoffs: BandCutoffs = Field(description="From the artifact's metadata.json (D22); the frontend marks them (S4-R3)")
 
 
 class AssessRequest(BaseModel):
@@ -79,6 +85,7 @@ class StoredAssessment(ScoreResponse):
     snapshot_id: int
     features_version: str = Field(description="SHA-256 of features/cashflow.py when the snapshot was computed")
     created_at: dt.datetime
+    window_start: dt.date = Field(description="First day of the observation window; it ends the day before as_of (S4-R3)")
 
 
 class AssessmentSummary(BaseModel):

@@ -24,8 +24,9 @@ class HistoryTooShort(ValueError):
     """The supplied history does not cover the whole observation window (S1-R6)."""
 
 
-def window_start(as_of) -> pd.Timestamp:
-    return pd.Timestamp(as_of) - pd.DateOffset(months=WINDOW_MONTHS)
+def window_start(as_of, months: int = WINDOW_MONTHS) -> pd.Timestamp:
+    """First day of the observation window [as_of - months, as_of)."""
+    return pd.Timestamp(as_of) - pd.DateOffset(months=months)
 
 
 def check_history(history_start, as_of) -> None:

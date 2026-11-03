@@ -135,7 +135,7 @@ def assess(c, borrower_id, as_of):
     return c.post(f"/api/v1/borrowers/{borrower_id}/assessments", json={"as_of": as_of})
 
 
-STORED_ONLY = {"id", "borrower_id", "snapshot_id", "features_version", "created_at"}
+STORED_ONLY = {"id", "borrower_id", "snapshot_id", "features_version", "created_at", "window_start"}
 
 
 def output(a: dict) -> dict:
