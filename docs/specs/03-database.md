@@ -6,6 +6,21 @@ Borrowers, their transactions, the features computed from them, and every assess
 in Postgres. The API reads from and writes to the database instead of taking every transaction
 in each request.
 
+## Status
+
+One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
+`tests/test_spec_status.py` checks this table in CI. See "Status tracking" in
+[README.md](README.md).
+
+| Req | Status | Date | PR | Evidence |
+|---|---|---|---|---|
+| S3-R1 | planned | | | |
+| S3-R2 | planned | | | |
+| S3-R3 | planned | | | |
+| S3-R4 | planned | | | |
+| S3-R5 | planned | | | |
+| S3-R6 | planned | | | |
+
 ## In scope
 
 Neon Postgres, SQLAlchemy 2 (async, with asyncpg), and Alembic migrations, using a repository

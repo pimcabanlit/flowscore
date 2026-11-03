@@ -7,6 +7,35 @@ D21 scale-free features, a relative risk band, and the SHAP contribution of each
 score comes from a CatBoost model that is trained once and saved as a versioned artifact.
 There is no database yet.
 
+## Status
+
+One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
+`tests/test_spec_status.py` checks this table in CI. See "Status tracking" in
+[README.md](README.md).
+
+| Req | Status | Date | PR | Evidence |
+|---|---|---|---|---|
+| S1-R1 | planned | | | |
+| S1-R2 | planned | | | |
+| S1-R3 | planned | | | |
+| S1-R4 | planned | | | |
+| S1-R5 | planned | | | |
+| S1-R6 | planned | | | |
+| S1-R7 | planned | | | |
+| S1-R8 | planned | | | |
+| S1-R9 | planned | | | |
+| S1-R10 | planned | | | |
+| S1-R11 | planned | | | |
+| S1-R12 | planned | | | |
+| S1-R13 | planned | | | |
+| S1-R14 | planned | | | |
+| S1-R15 | planned | | | |
+| S1-R16 | planned | | | |
+| S1-R17 | planned | | | |
+| S1-R18 | planned | | | |
+| S1-R19 | planned | | | |
+| S1-R20 | planned | | | |
+
 ## In scope
 
 - A training script that builds the app model and its artifact.

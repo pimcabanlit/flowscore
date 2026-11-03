@@ -5,6 +5,20 @@
 A web app over the slice 3 API with three views: a borrower list, a cash-flow view for one
 borrower, and an assessment page that shows the risk band and its SHAP explanation.
 
+## Status
+
+One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
+`tests/test_spec_status.py` checks this table in CI. See "Status tracking" in
+[README.md](README.md).
+
+| Req | Status | Date | PR | Evidence |
+|---|---|---|---|---|
+| S4-R1 | planned | | | |
+| S4-R2 | planned | | | |
+| S4-R3 | planned | | | |
+| S4-R4 | planned | | | |
+| S4-R5 | planned | | | |
+
 ## In scope
 
 Next.js App Router with TypeScript in strict mode, Tailwind and shadcn/ui, and `/api/v1`

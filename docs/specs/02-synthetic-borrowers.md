@@ -6,6 +6,21 @@ A seeded generator produces a set of fictional Philippine borrowers. Their trans
 like real Philippine bank activity, follow the canonical schema, and can be scored by the
 slice 1 API. The set exists **only** to make the demo realistic (D1, hard rule 9).
 
+## Status
+
+One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
+`tests/test_spec_status.py` checks this table in CI. See "Status tracking" in
+[README.md](README.md).
+
+| Req | Status | Date | PR | Evidence |
+|---|---|---|---|---|
+| S2-R1 | planned | | | |
+| S2-R2 | planned | | | |
+| S2-R3 | planned | | | |
+| S2-R4 | planned | | | |
+| S2-R5 | planned | | | |
+| S2-R6 | planned | | | |
+
 ## In scope
 
 - A generator script that writes canonical-schema CSV files for a fixed set of personas.

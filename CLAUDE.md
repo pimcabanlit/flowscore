@@ -36,7 +36,9 @@ scripts/run_tabpfn.py     TabPFN on the same folds (~50 min CPU; needs TABPFN_TO
 tools/bpi_parser.py       BPI statement PDF -> canonical CSV (local only)
 tools/verify_transactions.py  reconcile parsed CSV against statement totals
 tools/personal_features.py    features on the owner's own statements
-tests/                    unit tests, hand-calculated values; golden test vs results/features.csv
+tests/                    unit tests, hand-calculated values; golden test vs results/features.csv;
+                          test_spec_status.py checks the Status tables in docs/specs/
+docs/specs/               app specs, one per slice, each with a requirement Status table
 results/                  research outputs (committed); features.csv is the golden file
 data/raw/                 Berka CSVs (NOT committed)
 personal/                 owner's statements, transactions.csv, category_rules.csv (NOT committed)
@@ -49,14 +51,14 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 33 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 38 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
 python tools\personal_features.py personal\transactions.csv
 ```
 
-33 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+38 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 
@@ -78,6 +80,9 @@ and every change must be cheap to undo.
      `print` or log line in `tools/` outputs unmasked transaction data (use `_mask`).
    - **UI changes** (once the frontend exists): open the page in a browser, exercise the change,
      and attach a screenshot made with synthetic data only.
+   - **Spec status:** if the change implements or drops a requirement in `docs/specs/`, update
+     its row in that spec's Status table (date, PR, evidence) and cite the id in its test.
+     `tests/test_spec_status.py` fails CI if a cited requirement is still `planned`.
 3. **Open a PR** with Summary, Testing (the output above), Risk tier (with the file that set it;
    see "Risk tiers" in `REVIEW.md`), and How to revert.
 4. **Answer every review finding:** fix it, or reply with why not. None left silent.
