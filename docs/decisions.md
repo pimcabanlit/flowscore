@@ -126,16 +126,33 @@ Research results are unchanged: the research feature path and `results/` are unt
 measured cost is large enough that a different transfer approach is worth trying.
 
 **D22. Slice 1 artifact choices: committed model, out-of-fold reference, 50/80 band cut-offs.**
-Answers the spec's open questions 1 to 3 with its recommendations, adopted by default in the
-slice 1 PR; the owner can still overrule them before merging.
+Answers the slice 1 spec's open questions 1 to 4. Confirmed by owner (2026-11-03).
 - *Artifact committed:* `models/catboost-sf-v1/` is committed, like `results/features.csv`: it is
-  small and derived from public Berka data. The API tests do not need it (they build a tiny
-  artifact from made-up rows with the same `build_artifact`), so CI never needs Berka data.
+  small and derived from public Berka data. Most API tests build a tiny artifact from made-up
+  rows with the same `build_artifact`; one test checks the committed artifact against
+  `results/d21_scale_free.csv`. CI never needs Berka data.
+- *Loading is code execution:* `model.joblib` is a pickle, and loading it can run code. So the
+  artifact folder is chosen once at startup from `FLOWSCORE_MODEL_DIR`, must resolve inside the
+  repo's `models/` folder (anything else is refused), and is never named by a request. Changes
+  to `models/` are High tier and are read by hand before merging.
 - *Percentile reference:* each Berka loan's out-of-fold CatBoost score, averaged over the 10
   repeats of the D21 folds. In-sample scores are overfitted and push known defaulters to the
   extremes, which would make a new borrower look safer than they are. The training script checks
   that these scores reproduce the D21 CV AUROC before it writes anything.
 - *Band cut-offs:* `lower` below the 50th percentile, `middle` from 50 to 80, `higher` above 80,
   so roughly the top fifth of the reference population is flagged. Stored in the artifact's
-  `metadata.json`, not in the service code.
+  `metadata.json`, not in the service code. Bands are always relative ("lower / middle / higher
+  relative risk" among the Berka reference borrowers), never an absolute label such as "high risk".
+- *Dependencies:* `fastapi`, `uvicorn` and FastAPI's own dependencies were added to the lock.
+  `httpx2` (the test client) was already locked, but only as a TabPFN dependency, so it is listed
+  in `requirements.txt` explicitly.
 *Reopen if:* a lender needs a different share flagged, or Philippine outcomes allow calibration.
+
+## Open questions
+
+**O2. Use the "income missing" signal?** Income is NaN for 28 Berka loans (the median month had
+no inflow), and 10 of them defaulted: 36% against 11% overall. The D21 model imputes the median,
+so this signal is unused. An "income missing" flag as a sixth feature would likely help, but it
+changes the D21 numbers, so it needs its own decision entry, a rerun of
+`scripts/run_scale_free.py` and a new artifact version. It also needs a check that a missing
+income means the same thing for a Philippine statement as for Berka. For a later slice.

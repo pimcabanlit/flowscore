@@ -53,7 +53,9 @@ class ScoreResponse(BaseModel):
     missing: list[MissingFeature]
     out_of_range: list[OutOfRange]
     risk_percentile: Optional[float] = Field(description="Share of Berka reference borrowers with a lower score")
-    risk_band: Optional[Literal["lower", "middle", "higher"]]
+    risk_band: Optional[Literal["lower", "middle", "higher"]] = Field(
+        description='"lower", "middle" or "higher" relative risk among the Berka reference borrowers. '
+                    'Always relative: never an absolute level such as "high risk" (D21, D22).')
     shap: Optional[Shap]
     notice: str
 

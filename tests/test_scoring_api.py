@@ -57,7 +57,7 @@ def artifact_dir(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def client(artifact_dir):
-    with TestClient(create_app(Settings(model_dir=artifact_dir))) as c:
+    with TestClient(create_app(Settings(model_dir=artifact_dir), models_root=artifact_dir.parent)) as c:
         yield c
 
 
@@ -331,7 +331,7 @@ def test_artifact_with_wrong_features_is_refused(artifact_dir, tmp_path):   # S1
     with pytest.raises(ArtifactError, match="refusing to load"):
         load_artifact(bad)
     with pytest.raises(ArtifactError):
-        with TestClient(create_app(Settings(model_dir=bad))):
+        with TestClient(create_app(Settings(model_dir=bad), models_root=tmp_path)):
             pass
     with pytest.raises(ArtifactError, match="no model artifact"):
         load_artifact(tmp_path / "nowhere")
@@ -341,10 +341,10 @@ def test_model_is_held_in_memory(artifact_dir, tmp_path, monkeypatch):   # S1-R1
     copy = tmp_path / "copy"
     shutil.copytree(artifact_dir, copy)
     monkeypatch.setenv("FLOWSCORE_MODEL_DIR", str(copy))
-    assert Settings().resolved_model_dir() == copy
+    assert Settings().resolved_model_dir(models_root=tmp_path) == copy.resolve()
     monkeypatch.delenv("FLOWSCORE_MODEL_DIR")
     assert Settings().resolved_model_dir() == ROOT / "models" / "catboost-sf-v1"
-    with TestClient(create_app(Settings(model_dir=copy))) as c:
+    with TestClient(create_app(Settings(model_dir=copy), models_root=tmp_path)) as c:
         shutil.rmtree(copy)                                  # requests must not need the disk
         assert c.post(URL, json=body(ACCOUNT_A)).json()["status"] == "scored"
 
@@ -396,3 +396,28 @@ def test_committed_artifact_matches_the_research(): # S1-R1
         out = c.post(URL, json=body(ACCOUNT_A)).json()
     assert out["status"] == "scored" and out["risk_band"] in {"lower", "middle", "higher"}
     assert_features(out["features"], A_EXPECTED)
+
+
+def test_artifacts_load_only_from_models_folder(artifact_dir):   # S1-R17
+    # joblib loading can execute code, so the artifact must sit in the repo's models/ folder (D22)
+    with pytest.raises(ValueError, match="outside"):
+        Settings(model_dir=artifact_dir).resolved_model_dir()
+    with pytest.raises(ValueError, match="outside"):
+        Settings(model_dir="models/../tests").resolved_model_dir()
+    with pytest.raises(ValueError, match="outside"):
+        with TestClient(create_app(Settings(model_dir=artifact_dir))):
+            pass
+    # ...and is chosen only at startup: no request schema can carry a path, and the request code
+    # never calls the loader
+    from backend.app.assessments.schemas import ScoreRequest
+    assert set(ScoreRequest.model_fields) == {"as_of", "history_start", "transactions"}
+    for p in (ROOT / "backend" / "app" / "assessments").glob("*.py"):
+        assert "load_artifact" not in p.read_text(encoding="utf-8") and "joblib" not in p.read_text(encoding="utf-8")
+
+
+def test_band_labels_stay_relative(client):              # S1-R10
+    for rows in (ACCOUNT_A, ACCOUNT_B, ACCOUNT_C):
+        out = client.post(URL, json=body(rows))
+        assert out.json()["risk_band"] in {None, "lower", "middle", "higher"}
+        text = out.text.lower()
+        assert "high risk" not in text and "low risk" not in text and '"high"' not in text
