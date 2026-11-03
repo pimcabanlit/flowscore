@@ -197,6 +197,43 @@ the slice 3 PR; the owner confirms by merging.
 *Reopen if:* real borrower data is admitted (sign-in, retention and deletion rules, and the
 synthetic-only constraint), or a Postgres-only difference shows up that the SQLite tests miss.
 
+**D25. Slice 4 frontend: same repo, figures from the API, no chart library, no CI job yet.**
+Answers the slice 4 draft spec's open question and the choices it left open. Proposed in the
+slice 4 PR; the owner confirms by merging.
+- *Same repo* (open question 1): `frontend/` next to `backend/`, so one PR can change an
+  endpoint and its view together, and the spec, the API and the page are reviewed as one.
+- *The frontend computes no figure.* The monthly cash-flow summary is a backend endpoint
+  (`backend/app/transactions/summary.py`, S4-R6) with hand-worked tests, and the plain-language
+  feature labels are a backend glossary (S4-R7). The frontend formats numbers and draws them.
+  The reason: CI runs pytest only, so anything that decides what a number means must live where
+  pytest reads it.
+- *The summary is not a feature.* It is not in `features/cashflow.py`: adding it there would
+  change `FEATURES_VERSION` (every stored snapshot would look stale) and touch a research-frozen,
+  High-tier file for a display need. It never feeds the model. Money in includes interest, which
+  the model's income figure excludes; the page says so.
+- *Months not fully covered show no figures*, for the same reason D24 refuses a window that is
+  not covered: part of a month would look like a month with less income.
+- *No chart library.* The two charts (monthly bars with a balance line, and SHAP bars) are a
+  few dozen lines of SVG and HTML each. A chart library (Recharts, through shadcn's chart
+  component) would add a dependency tree for two charts and hide how the drawing maps to the
+  numbers. Revisit if slice 5's portfolio analytics needs many chart types.
+- *New dependencies, all in `frontend/package.json`, none in `requirements*.txt`:* `next`,
+  `react`, `react-dom`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`, and
+  dev-only `tailwindcss` (with `@tailwindcss/turbopack`, the Next.js 16 template's loader),
+  `typescript`, `eslint`, `eslint-config-next` and type packages. All are on the owner's stack.
+  `package-lock.json` is committed, so `npm ci` reproduces the install. `npm audit` reports 16
+  moderate advisories, all in ESLint's plugin chain (`minimatch`), which never ships to the
+  browser; the fix is a major ESLint change, left for a dependency PR.
+- *Design resources used as guidance, not installed into the repo:* Impeccable (its "Operate"
+  mode and craft checks) and UI UX Pro Max (its style and palette search) were read from a
+  scratch clone during the build. Neither is a dependency of the app or committed here.
+- *No frontend job in CI yet.* `npm run check` (typecheck, lint, build) runs locally and its
+  output goes in each UI PR. Adding it to `.github/workflows/ci.yml` is High tier and is its own
+  PR, after which `CI / tests` would cover both. The pytest scan of `frontend/src` (S4-R8) is
+  the one frontend guard CI runs now.
+*Reopen if:* the frontend grows logic worth unit-testing (then add Vitest and the CI job), or a
+second client needs the same summaries.
+
 ## Open questions
 
 **O2. Use the "income missing" signal?** Income is NaN for 28 Berka loans (the median month had
