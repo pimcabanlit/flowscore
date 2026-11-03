@@ -5,6 +5,7 @@ statements. Dates were checked against a calendar: 2025-11-15 is a Saturday, 202
 (and Bonifacio Day), 2025-12-31 a Wednesday (special non-working day) and 2025-12-30 a Tuesday
 (Rizal Day), 2026-08-31 the last Monday of August (National Heroes Day).
 """
+import ast
 import datetime as dt
 import inspect
 from pathlib import Path
@@ -13,9 +14,9 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from flowscore import synthetic
 from flowscore.schema import CATEGORIES, validate
-from flowscore.synthetic import (AS_OF, HISTORY_START, PERSONAS, Profile, generate, paydays, read,
+from flowscore_demo import synthetic
+from flowscore_demo.synthetic import (AS_OF, HISTORY_START, PERSONAS, Profile, generate, paydays, read,
                                  simulate, to_canonical, transfer_fee, write)
 
 from backend.app.core.app import create_app
@@ -224,3 +225,29 @@ def test_score_table_names_the_top_driver(scored):  # S2-R10
     assert mod.top_driver(None) == ""
     _, s = results[0]
     assert set(s["shap"]["contributions"]) == set(s["features"])
+
+
+# ---------------------------------------------------------------------------------------------
+# the demo package stays out of the research package
+
+def demo_imports(source: str) -> list:
+    """Line numbers of every import of flowscore_demo in a module's source."""
+    hits = []
+    for node in ast.walk(ast.parse(source)):
+        names = ([a.name for a in node.names] if isinstance(node, ast.Import)
+                 else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
+        if any(n == "flowscore_demo" or n.startswith("flowscore_demo.") for n in names):
+            hits.append(node.lineno)
+    return hits
+
+
+def test_research_package_never_imports_the_demo_package():  # S2-R12
+    # the checker itself, on made-up sources
+    assert demo_imports("import flowscore_demo\nfrom flowscore_demo.synthetic import write\n") == [1, 2]
+    assert demo_imports("from flowscore import schema\nimport flowscore_demox\n") == []
+    # the rule: no module under src/flowscore/ imports src/flowscore_demo/
+    research = sorted((ROOT / "src" / "flowscore").rglob("*.py"))
+    assert research, "no research modules found"
+    bad = {str(p.relative_to(ROOT)): demo_imports(p.read_text(encoding="utf-8")) for p in research}
+    assert {p: lines for p, lines in bad.items() if lines} == {}
+    assert not (ROOT / "src" / "flowscore" / "synthetic.py").exists()

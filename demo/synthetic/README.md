@@ -5,7 +5,7 @@ Borrower nn") with 12 months of transactions each, for the app demo. They have n
 are never evidence for a research question (D1, D23). No row comes from anyone's statements:
 the patterns follow Philippine banking (semi-monthly payroll, InstaPay and PESONet fees, 13th
 month pay, remittances) and the amounts come from public figures listed in
-`src/flowscore/synthetic.py`.
+`src/flowscore_demo/synthetic.py`.
 
 - `borrowers.csv`: one row per borrower, with `persona` and `synthetic = true`.
 - `transactions.csv`: `borrower_id` plus the canonical schema columns.

@@ -9,7 +9,7 @@ committed demo/synthetic/ matches the default seed.
 import argparse
 from pathlib import Path
 
-from flowscore.synthetic import DEFAULT_SEED, write
+from flowscore_demo.synthetic import DEFAULT_SEED, write
 
 ROOT = Path(__file__).resolve().parents[1]
 

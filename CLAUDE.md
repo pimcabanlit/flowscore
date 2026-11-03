@@ -20,8 +20,9 @@ What the app must do, slice by slice: `docs/specs/`.
   guarded by a golden test.
 - **App: slice 1 (scoring API) done.** `backend/` and `scripts/train_app_model.py`; the
   real artifact `models/catboost-sf-v1/` is trained on a machine with `data/raw/` (D22).
-- **App: slice 2 (synthetic borrowers) done.** `src/flowscore/synthetic.py` writes 30 fictional
-  borrowers to `demo/synthetic/` (D23); demo only, never research evidence.
+- **App: slice 2 (synthetic borrowers) done.** `src/flowscore_demo/synthetic.py` writes 30
+  fictional borrowers to `demo/synthetic/` (D23); demo only, never research evidence, and kept
+  out of the research package (nothing in `src/flowscore/` may import it).
 
 ## Layout
 
@@ -34,7 +35,9 @@ src/flowscore/
   adapters/berka.py       Berka codes -> canonical schema
   window.py, data.py      Berka loading and observation window
   experiment.py           feature sets, models, CV, bootstrap helpers
-  synthetic.py            demo-only synthetic Philippine borrowers (slice 2, D23)
+src/flowscore_demo/
+  synthetic.py            demo-only synthetic Philippine borrowers (slice 2, D23); never
+                          imported by src/flowscore/
 scripts/run_research.py   RQ1-RQ5 end to end (~10 min)
 scripts/run_tabpfn.py     TabPFN on the same folds (~50 min CPU; needs TABPFN_TOKEN)
 scripts/train_app_model.py  app model artifact -> models/catboost-sf-v1/ (needs data/raw/)
@@ -61,7 +64,7 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 76 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 77 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
@@ -72,7 +75,7 @@ python scripts\generate_synthetic_borrowers.py   # demo/synthetic/ (--seed, defa
 python scripts\score_synthetic_borrowers.py      # persona, band, top SHAP driver per borrower
 ```
 
-76 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+77 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 

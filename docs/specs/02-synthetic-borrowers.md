@@ -14,7 +14,7 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 
 | Req | Status | Date | PR | Evidence |
 |---|---|---|---|---|
-| S2-R1 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_paydays_move_back_from_weekends_and_holidays, test_transfer_fees_follow_the_dated_schedule, test_interest_is_net_of_final_tax; sources table in src/flowscore/synthetic.py |
+| S2-R1 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_paydays_move_back_from_weekends_and_holidays, test_transfer_fees_follow_the_dated_schedule, test_interest_is_net_of_final_tax; sources table in src/flowscore_demo/synthetic.py |
 | S2-R2 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_borrower_set_covers_every_persona |
 | S2-R3 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_borrower_set_covers_every_persona |
 | S2-R4 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_same_seed_same_bytes, test_committed_files_match_the_generator |
@@ -25,10 +25,11 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 | S2-R9 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_every_borrower_is_scored (all 30 scored, none refused) |
 | S2-R10 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_score_table_names_the_top_driver; table pasted in the PR |
 | S2-R11 | implemented | 2026-11-03 | #11 | tests/test_synthetic.py::test_hand_worked_steady_account |
+| S2-R12 | implemented | 2026-11-03 | #13 | tests/test_synthetic.py::test_research_package_never_imports_the_demo_package |
 
 ## In scope
 
-- A generator module (`src/flowscore/synthetic.py`) and a script that writes canonical-schema
+- A generator module (`src/flowscore_demo/synthetic.py`) and a script that writes canonical-schema
   CSV files for 30 borrowers in five personas.
 - The personas, the patterns they follow, and the public figures behind the amounts.
 - A script that scores every borrower through the API and prints the result table.
@@ -64,7 +65,7 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 
   Amounts come from public sources: PSA wage and remittance statistics, the NCR wage order,
   Meralco rates and published bank fees. Each source, and each amount that is an assumption, is
-  listed in the table in the module docstring of `src/flowscore/synthetic.py`.
+  listed in the table in the module docstring of `src/flowscore_demo/synthetic.py`.
 - **S2-R2. Personas.** Five personas, each so the demo can show a different situation:
   - `steady_salaried`: semi-monthly pay from PSA daily pay figures, rent, bills, a modest card
     bill paid in full, savings that build up;
@@ -122,6 +123,13 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
   move), the 13th-month pay, the fee rows, the monthly totals and the running balance; and that
   the same profile pays no fee after 2026-07-01.
 
+### Placement
+
+- **S2-R12. Outside the research package.** The generator lives in `src/flowscore_demo/`, a
+  package of its own. It may import `flowscore` (the canonical schema), but no module under
+  `src/flowscore/` may import `flowscore_demo`, so research code can never use synthetic data
+  (hard rule 9). A test scans every research module's imports.
+
 ## Acceptance
 
 1. `python scripts\generate_synthetic_borrowers.py` writes `demo/synthetic/`, and running it again
@@ -132,8 +140,8 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 
 ## Risk tier
 
-**Medium.** The slice adds a module under `src/flowscore/` outside the research-frozen paths, two
-scripts, demo data and tests. It becomes High if it touches `features/` or `schema.py`, for
+**Medium.** The slice adds a demo package, `src/flowscore_demo/`, outside the research package,
+two scripts, demo data and tests. It becomes High if it touches `features/` or `schema.py`, for
 example to add a category.
 
 ## Findings from the first run
