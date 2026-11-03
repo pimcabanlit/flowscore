@@ -17,6 +17,7 @@ from backend.app.borrowers.router import router as borrowers_router
 from backend.app.core import tables  # noqa: F401  (registers every table)
 from backend.app.core.db import make_engine, make_sessionmaker
 from backend.app.core.settings import MODELS_ROOT, Settings
+from backend.app.features.router import router as features_router
 from backend.app.models.artifact import load_artifact
 from backend.app.models.registry import register
 from backend.app.transactions.router import router as transactions_router
@@ -61,11 +62,13 @@ def create_app(settings: Settings = None, models_root=MODELS_ROOT) -> FastAPI:
     @api.get("/health", response_model=Health)
     def health(request: Request) -> dict:
         m = request.app.state.model
-        return {"model_version": m.model_version, "features": m.features}
+        return {"model_version": m.model_version, "features": m.features,
+                "band_cutoffs": m.metadata["band_cutoffs"]}
 
     api.include_router(assessments_router)
     api.include_router(borrowers_router)
     api.include_router(borrower_assessments_router)
     api.include_router(transactions_router)
+    api.include_router(features_router)
     app.include_router(api)
     return app

@@ -26,6 +26,9 @@ What the app must do, slice by slice: `docs/specs/`.
 - **App: slice 3 (database) done.** SQLAlchemy 2 async + Alembic (`alembic/`); Postgres (Neon)
   in deployment, SQLite in tests (D24). `scripts/seed_demo_database.py` loads the synthetic
   borrowers; assessments and feature snapshots are append-only (database triggers).
+- **App: slice 4 (frontend) done.** Next.js in `frontend/`: borrower list, cash-flow view,
+  assessment page with the relative band, SHAP bars and flags (D25). The frontend computes no
+  figure: the monthly summary and the feature labels come from the API.
 
 ## Layout
 
@@ -50,6 +53,9 @@ backend/app/              FastAPI API, by domain: borrowers/, transactions/, fea
                           assessments/, models/ (each with its tables and repository), core/
 alembic/, alembic.ini     database migrations (High tier); URL only from FLOWSCORE_DATABASE_URL
 scripts/seed_demo_database.py  load demo/synthetic/ into the database (synthetic borrowers only)
+scripts/assess_demo_borrowers.py  assess each stored borrower once, through the API (slice 4)
+frontend/                 Next.js App Router + TypeScript strict + Tailwind (slice 4, D25);
+                          src/app/ pages, src/components/, src/lib/api.ts (response types)
 models/                   versioned model artifacts (committed; D22)
 demo/synthetic/           synthetic demo borrowers and transactions (committed; D23)
 tools/bpi_parser.py       BPI statement PDF -> canonical CSV (local only)
@@ -70,7 +76,7 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 104 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 112 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
@@ -82,9 +88,12 @@ python scripts\score_synthetic_borrowers.py      # persona, band, top SHAP drive
 $env:FLOWSCORE_DATABASE_URL="sqlite+aiosqlite:///flowscore-demo.db"   # or Neon; never in a file
 alembic upgrade head                            # create the tables (alembic downgrade base undoes it)
 python scripts\seed_demo_database.py            # load the synthetic borrowers (second run: no change)
+python scripts\assess_demo_borrowers.py         # one assessment per borrower, for the list's bands
+cd frontend; npm ci; npm run build; npm start   # web app on :3000 (API on :8000; Node 20.9+)
+npm run check                                   # in frontend/: typecheck, lint, production build
 ```
 
-104 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+112 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 
@@ -104,7 +113,7 @@ and every change must be cheap to undo.
      Without that evidence the PR is not ready.
    - **Privacy check:** `git status` shows nothing from `personal/` or `data/`, and no new
      `print` or log line in `tools/` outputs unmasked transaction data (use `_mask`).
-   - **UI changes** (once the frontend exists): open the page in a browser, exercise the change,
+   - **UI changes** (`frontend/`): run `npm run check` there and paste its output; open the page in a browser, exercise the change,
      and attach a screenshot made with synthetic data only.
    - **Spec status:** if the change implements or drops a requirement in `docs/specs/`, update
      its row in that spec's Status table (date, PR, evidence) and cite the id in its test.
@@ -163,7 +172,7 @@ differ.
 2. **Synthetic Philippine borrowers** for the demo, calibrated on statement *patterns*
    (semi-monthly payroll, InstaPay fees, card payments), never the owner's amounts.
 3. **Database:** borrowers, transactions, feature snapshots, assessments, model registry.
-4. **Frontend:** borrower list, borrower cash-flow view, assessment page (PD + SHAP).
+4. **Frontend:** borrower list, borrower cash-flow view, assessment page (relative band + SHAP).
 5. **Extras:** portfolio analytics, LLM narrative, settings. Vintage/migration analysis is out
    of scope for v1 (no outcome history).
 

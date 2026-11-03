@@ -306,7 +306,8 @@ def test_notice_is_always_present(client):              # S1-R14
 
 
 def test_health(client):                                # S1-R15
-    assert client.get("/api/v1/health").json() == {"model_version": "test-sf-v0", "features": SCALE_FREE_FEATURES}
+    assert client.get("/api/v1/health").json() == {"model_version": "test-sf-v0", "features": SCALE_FREE_FEATURES,
+                                                   "band_cutoffs": {"lower_below": 50.0, "higher_above": 80.0}}
 
 
 # ---------------------------------------------------------------------------------------------

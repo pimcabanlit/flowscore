@@ -9,14 +9,14 @@ slice is to bring its spec up to the level of detail slice 1 has.
 | 1 | [Scoring API](01-scoring-api.md) | Implemented |
 | 2 | [Synthetic Philippine borrowers](02-synthetic-borrowers.md) | Implemented |
 | 3 | [Database](03-database.md) | Implemented |
-| 4 | [Frontend](04-frontend.md) | Draft |
+| 4 | [Frontend](04-frontend.md) | Implemented |
 | 5 | [Extras](05-extras.md) | Draft |
 
 ## How the specs relate to the other documents
 
 - **`CLAUDE.md` hard rules** apply to every slice and are not repeated here, except where a
   rule decides a requirement.
-- **`docs/decisions.md`** records *why*. A spec cites decisions (D1 to D24) and never
+- **`docs/decisions.md`** records *why*. A spec cites decisions (D1 to D25) and never
   contradicts them. If building a slice needs a new decision, add it to the log, then update
   the spec.
 - **The original project spec** (FR numbers such as FR-08 B) is the starting point. These specs

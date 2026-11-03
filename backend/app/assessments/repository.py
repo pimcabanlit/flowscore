@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.assessments.models import Assessment
+from backend.app.assessments.service import window_start
 from backend.app.features.models import FeatureSnapshot
 from backend.app.features.service import in_feature_order
 
@@ -60,6 +61,7 @@ def to_response(a: Assessment, s: FeatureSnapshot) -> dict:
     return {
         "id": a.id, "borrower_id": s.borrower_id, "snapshot_id": s.id, "features_version": s.features_version,
         "created_at": a.created_at,
+        "window_start": window_start(s.as_of, s.window_months).date(),
         "status": a.status, "model_version": a.model_version, "as_of": s.as_of,
         "income_denominator": s.income_denominator, "features": in_feature_order(s.features),
         "missing": a.missing, "out_of_range": a.out_of_range,
