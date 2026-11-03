@@ -55,7 +55,7 @@ Owner's machine: Windows 11 on ARM, PowerShell, x64 Python 3.12 venv in `.venv`
 
 ```powershell
 .venv\Scripts\Activate.ps1
-$env:PYTHONPATH="src"; pytest -q tests        # 60 tests; golden test needs data/raw/
+$env:PYTHONPATH="src"; pytest -q tests        # 62 tests; golden test needs data/raw/
 python scripts\run_research.py                # must reproduce results/ byte for byte
 python tools\bpi_parser.py personal\statements -o personal\transactions.csv
 python tools\verify_transactions.py personal\transactions.csv
@@ -64,7 +64,7 @@ python scripts\train_app_model.py             # app model artifact (needs data/r
 uvicorn backend.app.main:app --reload         # scoring API on :8000 (needs the artifact)
 ```
 
-60 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
+62 tests; the golden test skips without `data/raw/` and must be run locally (or anywhere the
 Berka data is present) before merging any change to `src/flowscore/`, `tools/` or `results/`.
 Install from `requirements-lock.txt` (the owner's verified environment), not `requirements.txt`.
 

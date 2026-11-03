@@ -9,3 +9,4 @@ pdfplumber
 pikepdf
 fastapi
 uvicorn
+httpx2  # test client for the API tests (Starlette TestClient); listed so they do not rely on TabPFN pulling it in

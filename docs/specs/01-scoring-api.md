@@ -24,14 +24,14 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 | S1-R7 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_transactions_on_or_after_as_of_change_nothing, test_future_transaction_never_sets_the_opening_balance |
 | S1-R8 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_backend_layout_and_one_feature_library (service calls cashflow.py only; no wrapper added) |
 | S1-R9 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_percentile_is_share_of_strictly_lower_scores, test_percentile_matches_reference_scores, test_raw_score_is_never_returned |
-| S1-R10 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_band_cutoffs_come_from_the_artifact |
+| S1-R10 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_band_cutoffs_come_from_the_artifact, test_band_labels_stay_relative |
 | S1-R11 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_shap_adds_up_to_log_odds (CatBoost's own ShapValues; no shap package call) |
 | S1-R12 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_missing_income_is_null_not_zero |
 | S1-R13 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_far_out_of_range_is_refused, test_range_rule_counts_only_present_features |
 | S1-R14 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_notice_is_always_present |
 | S1-R15 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_hand_worked_account_is_scored, test_health; uvicorn smoke run in PR #9 |
 | S1-R16 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_backend_layout_and_one_feature_library |
-| S1-R17 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_model_is_held_in_memory |
+| S1-R17 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_model_is_held_in_memory, test_artifacts_load_only_from_models_folder |
 | S1-R18 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_logs_hold_no_transaction_data |
 | S1-R19 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_hand_worked_account_is_scored, test_missing_income_is_null_not_zero, test_far_out_of_range_is_refused |
 | S1-R20 | implemented | 2026-11-03 | #9 | CI / tests runs tests/test_scoring_api.py on a tiny synthetic artifact built with build_artifact |
@@ -141,7 +141,8 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
   It imports `flowscore` and never copies from it.
 - **S1-R17. Model in memory.** The model loads once at startup, and requests do not touch the
   disk. The artifact folder is set by an environment variable, with a default of
-  `models/catboost-sf-v1`.
+  `models/catboost-sf-v1`. The folder must lie inside the repo's `models/` folder, and no
+  request can name a model or a path, because loading a joblib file can execute code (D22).
 - **S1-R18. No logging of transaction data.** Request bodies and feature values are not
   logged. Only the model version, status and timing are logged.
 
@@ -178,7 +179,7 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 - **Unused income signal.** Income is NaN for 28 Berka loans, and 36% of them defaulted. The
   model imputes the median, so this signal is unused (D21). Adding an "income missing" flag as
   a feature would change the D21 numbers, so it needs its own decision entry. It is not part of
-  this slice.
+  this slice: it is open question O2 in `docs/decisions.md`.
 - **Opening balance.** For Berka, the opening balance always comes from earlier history, since
   every account has at least 3.4 months of it. For an uploaded statement, `opening_balance`
   rebuilds it by undoing the first transaction. The two agree whenever a running balance is
@@ -189,20 +190,21 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 1. **Should the artifact be committed to git?**
    *Recommendation:* yes, `models/` is committed. The file is small, it lets CI run the API
    tests, and it is derived from public Berka data in the same way `results/features.csv` is.
-   *Adopted by default (D22), pending the owner's confirmation.*
+   *Confirmed by owner (D22).*
 2. **Where should the band cut-offs sit?**
    *Recommendation:* `lower` below the 50th percentile, `middle` from 50 to 80, `higher` above
    80. Under these cut-offs roughly the top fifth is flagged. Record the choice as a decision.
-   *Adopted by default (D22), pending the owner's confirmation.*
+   *Confirmed by owner (D22).*
 3. **Which scores define the percentile reference?** The options are in-sample scores from the
    final model, or out-of-fold scores from CV.
    *Recommendation:* out-of-fold mean scores. In-sample scores are overfitted, which pushes
    known defaulters to the extremes and would make new borrowers look safer than they are.
-   *Adopted by default (D22), pending the owner's confirmation.*
+   *Confirmed by owner (D22).*
 4. **Which new dependencies should be added?** The slice needs `fastapi`, `uvicorn`, and
    `httpx` for the test client. `pydantic` v2 comes with FastAPI.
    *Recommendation:* add these to `requirements.txt` and the lock in their own flagged PR,
    before any API code (hard rule 10).
    *Done as the first, separate commit of the slice 1 PR:* `fastapi`, `uvicorn`, and FastAPI's
    own dependencies (`starlette`, `opentelemetry-api`, `annotated-doc`). `httpx` is not needed:
-   the test client uses `httpx2`, which the lock already had.
+   the test client uses `httpx2`, which the lock already had (now listed in `requirements.txt`).
+   *Confirmed by owner (D22).*

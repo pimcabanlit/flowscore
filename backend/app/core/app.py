@@ -7,18 +7,21 @@ from fastapi import APIRouter, FastAPI, Request
 
 from backend.app.assessments.router import router as assessments_router
 from backend.app.assessments.schemas import Health
-from backend.app.core.settings import Settings
+from backend.app.core.settings import MODELS_ROOT, Settings
 from backend.app.models.artifact import load_artifact
 
 log = logging.getLogger("flowscore.api")
 
 
-def create_app(settings: Settings = None) -> FastAPI:
+def create_app(settings: Settings = None, models_root=MODELS_ROOT) -> FastAPI:
+    """The artifact is chosen once, here, from settings (FLOWSCORE_MODEL_DIR) and must lie inside
+    `models_root`. No request can name a model or a path (D22). `models_root` is a code argument,
+    not a setting, so only tests can point it elsewhere."""
     settings = settings or Settings()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.state.model = load_artifact(settings.resolved_model_dir())
+        app.state.model = load_artifact(settings.resolved_model_dir(models_root))
         log.info("loaded model=%s", app.state.model.model_version)
         yield
 
