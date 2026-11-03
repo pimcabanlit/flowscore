@@ -16,7 +16,9 @@ These are the failures that matter here. Any instance is **Important**, never a 
 3. **Research drift.** A change to `src/flowscore/features/`, `adapters/`, `schema.py`,
    `window.py`, `experiment.py`, `scripts/run_*.py` or `results/` without pasted evidence from a
    machine with Berka data: all tests passed, none skipped, and `git diff --exit-code results/`
-   after `run_research.py` and `run_scale_free.py`. A deliberate result change without a new
+   after `run_research.py` and `run_scale_free.py`. A change anywhere else under `src/flowscore/`
+   or `tools/` without pasted evidence that the full suite ran with the Berka data: all tests
+   passed, none skipped (the golden test; `CLAUDE.md`). A deliberate result change without a new
    `docs/decisions.md` entry.
 4. **Wrong numbers.** Missing values turned into 0 (`fillna(0)`, `or 0`, default 0.0) where the
    value is unknown; a new feature or financial calculation without a test with hand-worked
@@ -51,8 +53,8 @@ wins**. When unsure, go **one tier up**. Every PR states its tier and the file t
 
 | Tier | Paths in this repo | Owner before merging |
 |---|---|---|
-| **High** | `src/flowscore/features/`, `src/flowscore/adapters/`, `schema.py`, `window.py`, `experiment.py`, `data.py`, `results/`, `scripts/run_*.py`, `tools/` (handles personal data), `.gitignore`, `.gitattributes`, `requirements*.txt`, `.github/workflows/`; later: auth, migrations (`alembic/`), LLM prompts and tools, model artifacts, anything that deletes data or reads secrets | Read the whole diff and the pasted evidence, and run `/security-review`. Research-frozen paths also need the Berka evidence from `CLAUDE.md`. |
-| **Medium** | `CLAUDE.md`, `REVIEW.md`, `docs/decisions.md`, `.github/` (non-workflow), `README.md` when it changes commands or results, other `src/` and `tests/` changes | Read the summary, the evidence and the review findings. |
+| **High** | `src/flowscore/features/`, `src/flowscore/adapters/`, `schema.py`, `window.py`, `experiment.py`, `data.py`, `results/`, `scripts/run_*.py`, `tools/` (handles personal data), `.gitignore`, `.gitattributes`, `requirements*.txt`, `.github/workflows/`; later: auth, migrations (`alembic/`), LLM prompts and tools, model artifacts, anything that deletes data or reads secrets | Read the whole diff and the pasted evidence, and run `/security-review`. Research-frozen paths also need the Berka evidence from `CLAUDE.md`; any other change under `src/flowscore/` or `tools/` needs the full suite run with the Berka data (none skipped). |
+| **Medium** | `CLAUDE.md`, `REVIEW.md`, `docs/decisions.md`, `.github/` (non-workflow), `README.md` when it changes commands or results, other `src/` and `tests/` changes | Read the summary, the evidence and the review findings. Any change under `src/flowscore/` also needs the full suite run with the Berka data: all tests passed, none skipped. |
 | **Low** | Wording-only doc fixes (typos, links), comments, new tests that touch no code under test | Merge on green CI. |
 
 `CLAUDE.md` and `REVIEW.md` are never below Medium. Lowering an existing test's expected value
