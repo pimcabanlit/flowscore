@@ -48,7 +48,7 @@ export function ApiProblemPanel({ error }: { error: unknown }) {
   );
 }
 
-/** Run an API call; a 404 is returned as null so the page can call notFound(). */
+/** Run an API call and return its data or its error, so the page can choose notFound() or the panel. */
 export async function load<T>(call: () => Promise<T>): Promise<{ ok: true; data: T } | { ok: false; error: unknown }> {
   try {
     return { ok: true, data: await call() };
