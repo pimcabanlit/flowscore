@@ -169,6 +169,34 @@ Answers the slice 2 draft spec's open questions. Confirmed by owner (merged in #
 *Reopen if:* the demo needs a persona the D21 features cannot tell apart, or real patterns
 (not amounts) from the owner's statements show a habit the generator misses.
 
+**D24. Slice 3 database: Postgres in deployment, SQLite in tests, append-only history.**
+Answers the slice 3 draft spec's open questions and the design choices it left open. Proposed in
+the slice 3 PR; the owner confirms by merging.
+- *Engines:* Neon Postgres through SQLAlchemy 2 (async) and asyncpg is the target, as the stack
+  says. The tests and the offline demo run on SQLite through aiosqlite, so CI and the owner's
+  laptop need no database server. The schema uses only what both support (JSON becomes JSONB on
+  Postgres; money is NUMERIC(14, 2)), and setting `FLOWSCORE_TEST_DATABASE_URL` runs the same
+  tests on Postgres. The cost: a Postgres-only behaviour could slip past CI, so each database PR
+  pastes a Postgres run. A Postgres service in CI is the upgrade if that ever bites.
+- *Transactions per row, with batches* (open question 2): each loaded statement is a batch that
+  records the period it covers. An assessment is refused unless the batches cover its whole
+  3-month window, at both ends (S1-R6 only checked the start).
+- *No sign-in yet, no way in for real data* (open question 1): there is no endpoint that creates
+  a borrower or uploads transactions, and a check constraint refuses any borrower not marked
+  synthetic. Removing either is a later slice's migration and decision, and comes with sign-in.
+- *Append-only, enforced by the database:* triggers refuse UPDATE and DELETE on `assessments` and
+  `feature_snapshots`, so history cannot be rewritten even by code that skips the repository.
+  `alembic downgrade base` still drops everything (it is the undo of the whole slice).
+- *Reproducibility without manual version numbers:* a snapshot stores the SHA-256 of
+  `features/cashflow.py` and a fingerprint of the transactions it used. Scoring reads the
+  features back from the snapshot. The model registry stores the hashes of each artifact, and
+  startup fails if a registered version name now points to different files. The registry never
+  stores a path: artifacts still load only from `models/` (D22).
+- *Dependencies:* `sqlalchemy[asyncio]`, `asyncpg`, `alembic` and `aiosqlite` (with `greenlet`
+  and `Mako`), added in their own flagged commit.
+*Reopen if:* real borrower data is admitted (sign-in, retention and deletion rules, and the
+synthetic-only constraint), or a Postgres-only difference shows up that the SQLite tests miss.
+
 ## Open questions
 
 **O2. Use the "income missing" signal?** Income is NaN for 28 Berka loans (the median month had

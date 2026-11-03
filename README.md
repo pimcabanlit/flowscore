@@ -23,6 +23,23 @@ PYTHONPATH=src python scripts/train_app_model.py  # app model -> models/catboost
 PYTHONPATH=src uvicorn backend.app.main:app       # scoring API: POST /api/v1/assessments/score
 ```
 
+## Database (slice 3, optional)
+The API stores borrowers, transactions, feature snapshots and assessments when
+`FLOWSCORE_DATABASE_URL` is set (never in a file; see `docs/specs/03-database.md` and D24).
+Without it, the scoring API works as before and the database endpoints answer 503.
+```powershell
+$env:PYTHONPATH="src"
+# Offline: a local SQLite file (git-ignored). Or Neon: copy the *direct* (not pooled) connection
+# string and write it as postgresql+asyncpg://USER:PASSWORD@HOST/DBNAME?ssl=require
+$env:FLOWSCORE_DATABASE_URL="sqlite+aiosqlite:///flowscore-demo.db"
+alembic upgrade head                           # create the tables
+python scripts\seed_demo_database.py           # load the 30 synthetic demo borrowers
+uvicorn backend.app.main:app                   # then POST /api/v1/borrowers/SYN-001/assessments {"as_of": "2026-10-01"}
+alembic downgrade base                         # remove every table (and every stored assessment)
+```
+`pytest` runs the database tests on a temporary SQLite file. To run them on Postgres as well, set
+`FLOWSCORE_TEST_DATABASE_URL` to an empty database whose name contains `test` (the tests wipe it).
+
 ## Layout
 - `src/flowscore/schema.py`: the canonical transaction schema every feature works on
 - `src/flowscore/features/cashflow.py`: **the feature library**: research features, obligation
@@ -31,6 +48,8 @@ PYTHONPATH=src uvicorn backend.app.main:app       # scoring API: POST /api/v1/as
 - `src/flowscore/features/application.py`, `transactions.py`: Berka entry points for the research
 - `src/flowscore/experiment.py`: feature sets, models, CV, bootstrap
 - `scripts/run_research.py`, `scripts/run_tabpfn.py`: RQ1–RQ5 end to end
+- `backend/app/`: the FastAPI app, by domain (borrowers, transactions, features, assessments,
+  models); `alembic/` holds the database migrations
 - `tools/`: local-only BPI statement parser, verifier and personal feature runner
 - `results/`: output CSVs and run log; `results/features.csv` is the golden file for
   `tests/test_berka_golden.py`

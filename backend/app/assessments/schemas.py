@@ -63,3 +63,29 @@ class ScoreResponse(BaseModel):
 class Health(BaseModel):
     model_version: str
     features: list[str]
+
+
+class AssessRequest(BaseModel):
+    """POST /api/v1/borrowers/{id}/assessments (S3-R9)."""
+    model_config = ConfigDict(extra="forbid")
+
+    as_of: dt.date
+
+
+class StoredAssessment(ScoreResponse):
+    """A stored assessment: the slice 1 response plus where it came from (S3-R9)."""
+    id: int
+    borrower_id: str
+    snapshot_id: int
+    features_version: str = Field(description="SHA-256 of features/cashflow.py when the snapshot was computed")
+    created_at: dt.datetime
+
+
+class AssessmentSummary(BaseModel):
+    id: int
+    as_of: dt.date
+    status: Literal["scored", "refused"]
+    risk_band: Optional[Literal["lower", "middle", "higher"]]
+    risk_percentile: Optional[float]
+    model_version: str
+    created_at: dt.datetime

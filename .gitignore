@@ -16,4 +16,9 @@ venv/
 
 # Secrets
 .env
+
+# Local demo databases (slice 3): may hold whatever was loaded into them
+*.db
+*.sqlite
+*.sqlite3
 catboost_info/
