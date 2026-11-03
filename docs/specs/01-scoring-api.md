@@ -15,8 +15,8 @@ One row per requirement. Statuses are `planned`, `implemented` or `dropped`.
 
 | Req | Status | Date | PR | Evidence |
 |---|---|---|---|---|
-| S1-R1 | planned | | | |
-| S1-R2 | planned | | | |
+| S1-R1 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_committed_artifact_matches_the_research; owner's run: CV AUROC 0.7913 reproduces results/d21_scale_free.csv |
+| S1-R2 | implemented | 2026-11-03 | #9 | owner's machine: two runs of scripts/train_app_model.py gave the same training_predictions_sha256 (c6d97b85...); script also checks two in-process fits match |
 | S1-R3 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_artifact_contents (real artifact: train_app_model.py run pending) |
 | S1-R4 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_artifact_with_wrong_features_is_refused |
 | S1-R5 | implemented | 2026-11-03 | #9 | tests/test_scoring_api.py::test_every_validation_error_is_listed, test_transactions_before_history_start_are_rejected |

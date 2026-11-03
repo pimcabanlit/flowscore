@@ -375,3 +375,24 @@ def test_backend_layout_and_one_feature_library():         # S1-R16, S1-R8
             assert f"def {name}" not in text, f"{p} re-implements {name}"
     service_src = src[app / "assessments" / "service.py"]
     assert "from flowscore.features.cashflow import" in service_src
+
+
+# ---------------------------------------------------------------------------------------------
+# the committed Berka artifact (D22)
+
+def test_committed_artifact_matches_the_research(): # S1-R1
+    model = load_artifact(ROOT / "models" / "catboost-sf-v1")
+    meta = model.metadata
+    assert meta["model_version"] == "catboost-sf-v1"
+    assert meta["training_data"]["loans"] == 682 and meta["training_data"]["defaults"] == 76
+    assert meta["training_data"]["window_months"] == 3
+    d21 = pd.read_csv(ROOT / "results" / "d21_scale_free.csv").set_index("model").loc["CatBoost"]
+    assert meta["metrics"]["cv_auroc"] == d21.auroc_scale_free
+    assert meta["metrics"]["paired_diff_ci95"] == [d21.lo, d21.hi]
+    assert len(meta["reference_scores"]) == 682
+    assert meta["band_cutoffs"] == {"lower_below": 50.0, "higher_above": 80.0}
+    with TestClient(create_app(Settings())) as c:              # default FLOWSCORE_MODEL_DIR
+        assert c.get("/api/v1/health").json()["model_version"] == "catboost-sf-v1"
+        out = c.post(URL, json=body(ACCOUNT_A)).json()
+    assert out["status"] == "scored" and out["risk_band"] in {"lower", "middle", "higher"}
+    assert_features(out["features"], A_EXPECTED)
