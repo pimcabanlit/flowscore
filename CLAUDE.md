@@ -79,6 +79,7 @@ and every change must be cheap to undo.
      and attach a screenshot made with synthetic data only.
 3. **Open a PR** with Summary, Testing (the output above), Risk tier, and How to revert.
 4. **Answer every review finding:** fix it, or reply with why not. None left silent.
+   Reviewers (human or AI) follow `REVIEW.md`: what counts as Important, and how to report.
 5. **The owner merges.** Claude never merges and never calls a PR ready before its CI is green.
 6. **Whoever asked for the change owns it after it lands**, including the revert if it breaks.
 
